@@ -1,0 +1,16 @@
+{{ success ? '✅' : '❌' }} {{ summary }}
+
+{% if data is iterable and data|length > 0 %}
+{% for key, value in data %}
+{{ key }}: {{ value }}
+{% endfor %}
+{% elseif data is not null %}
+{{ data }}
+{% endif %}
+{% if _links is defined and _links|length > 0 %}
+
+Links:
+{% for rel, link in _links %}
+  {{ rel }}: {{ link.href }}
+{% endfor %}
+{% endif %}
