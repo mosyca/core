@@ -1,0 +1,24 @@
+{
+    "name": "mosyca/core",
+    "description": "Mosyca Core – PHP/Symfony framework for MCP-native, self-documenting API plugins",
+    "type": "library",
+    "license": "MIT",
+    "minimum-stability": "stable",
+    "authors": [
+        {
+            "name": "Roland Urban",
+            "email": "roland@mosyca.com",
+            "homepage": "https://mosyca.dev"
+        }
+    ],
+    "keywords": ["mcp", "api", "plugin", "symfony", "shopware", "cli", "openapi"],
+    "homepage": "https://mosyca.dev",
+    "require": {
+        "php": ">=8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mosyca\\Core\\": "src/"
+        }
+    }
+}
