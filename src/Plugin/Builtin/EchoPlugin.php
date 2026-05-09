@@ -2,37 +2,37 @@
 
 declare(strict_types=1);
 
-namespace Mosyca\Core\Examples;
+namespace Mosyca\Core\Plugin\Builtin;
 
 use Mosyca\Core\Plugin\Attribute\AsPlugin;
 use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Plugin\PluginResult;
 
 #[AsPlugin]
-final class PingPlugin implements PluginInterface
+final class EchoPlugin implements PluginInterface
 {
     public function getName(): string
     {
-        return 'core:system:ping';
+        return 'core:system:echo';
     }
 
     public function getDescription(): string
     {
-        return 'Returns pong. Confirms the plugin contract works end-to-end.';
+        return 'Echoes all input parameters back as output. Useful for debugging.';
     }
 
     public function getUsage(): string
     {
         return <<<'USAGE'
-        Health-check plugin. Takes an optional message and echoes it back.
+        Returns every input parameter unchanged. Useful for verifying that
+        parameter passing works end-to-end through MCP, CLI, or REST.
 
         ## Returns
-        - pong: always "pong"
-        - echo: the message you sent, or null if omitted
+        - All input parameters as-is
 
         ## Example
-        Input:  { "message": "hello" }
-        Output: { "pong": "pong", "echo": "hello" }
+        Input:  { "message": "hello", "count": 3 }
+        Output: { "message": "hello", "count": 3 }
         USAGE;
     }
 
@@ -41,10 +41,9 @@ final class PingPlugin implements PluginInterface
         return [
             'message' => [
                 'type' => 'string',
-                'description' => 'Optional message to echo back.',
-                'required' => false,
-                'default' => null,
-                'example' => 'hello',
+                'description' => 'Any string to echo back.',
+                'required' => true,
+                'example' => 'hello world',
             ],
         ];
     }
@@ -77,8 +76,8 @@ final class PingPlugin implements PluginInterface
     public function execute(array $args): PluginResult
     {
         return PluginResult::ok(
-            data: ['pong' => 'pong', 'echo' => $args['message'] ?? null],
-            summary: '✅ pong',
+            data: $args,
+            summary: 'echo: '.($args['message'] ?? '(empty)'),
         );
     }
 }

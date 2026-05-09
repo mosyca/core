@@ -1,0 +1,13 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    # Registry is public so it can be fetched from the container directly
+    # (tests, Gateway, Console Adapter).
+    Mosyca\Core\Plugin\PluginRegistry:
+        public: true
+
+    # Note: auto-tagging of PluginInterface implementations is registered via
+    # MosycaCoreExtension::registerForAutoconfiguration() — not here — so that
+    # it applies globally to all services, not just those in this file.

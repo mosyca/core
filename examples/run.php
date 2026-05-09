@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require __DIR__.'/../vendor/autoload.php';
 
-use Mosyca\Core\Examples\PingPlugin;
+use Mosyca\Core\Plugin\Builtin\PingPlugin;
 use Mosyca\Core\Plugin\PluginRegistry;
 
 $registry = new PluginRegistry();

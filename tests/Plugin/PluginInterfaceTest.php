@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Tests\Plugin;
 
-use Mosyca\Core\Examples\PingPlugin;
+use Mosyca\Core\Plugin\Builtin\PingPlugin;
 use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Plugin\PluginResult;
 use PHPUnit\Framework\TestCase;
