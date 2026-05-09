@@ -8,6 +8,28 @@ services:
     Mosyca\Core\Plugin\PluginRegistry:
         public: true
 
+    # Output Pipeline — all renderers explicit so library consumers get them
+    # without a wildcard resource scan.
+    Mosyca\Core\Renderer\Normalizer: ~
+    Mosyca\Core\Renderer\JsonRenderer: ~
+    Mosyca\Core\Renderer\YamlRenderer: ~
+    Mosyca\Core\Renderer\RawRenderer: ~
+    Mosyca\Core\Renderer\TableRenderer: ~
+    Mosyca\Core\Renderer\TwigRenderer: ~
+    Mosyca\Core\Renderer\McpRenderer: ~
+    Mosyca\Core\Renderer\OutputRenderer: ~
+    Mosyca\Core\Renderer\OutputRendererInterface:
+        alias: Mosyca\Core\Renderer\OutputRenderer
+
+    # Console Adapter — tagged console.command_loader so Symfony's Application
+    # discovers all plugin commands lazily by their plugin name.
+    #
     # Note: auto-tagging of PluginInterface implementations is registered via
     # MosycaCoreExtension::registerForAutoconfiguration() — not here — so that
     # it applies globally to all services, not just those in this file.
+    Mosyca\Core\Console\ConsoleAdapter:
+        public: true
+
+    # Built-in management commands (autoconfigure adds console.command tag via #[AsCommand]).
+    Mosyca\Core\Console\Command\PluginListCommand: ~
+    Mosyca\Core\Console\Command\PluginShowCommand: ~
