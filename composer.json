@@ -8,11 +8,11 @@
         {
             "name": "Roland Urban",
             "email": "roland@mosyca.com",
-            "homepage": "https://mosyca.dev"
+            "homepage": "https://github.com/mosyca"
         }
     ],
     "keywords": ["mcp", "api", "plugin", "symfony", "shopware", "cli", "openapi"],
-    "homepage": "https://mosyca.dev",
+    "homepage": "https://github.com/mosyca/core",
     "require": {
         "php": ">=8.2",
         "api-platform/core": "^3.4",
