@@ -20,8 +20,12 @@ final class MosycaCoreExtension extends Extension implements PrependExtensionInt
         $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__, 2).'/config'));
         $loader->load('services.yaml');
 
-        // Vault services require Doctrine ORM — only load when DoctrineBundle is present.
-        if ($container->hasExtension('doctrine')) {
+        // Vault services require Doctrine ORM — only load when DoctrineBundle is registered.
+        // NOTE: hasExtension() cannot be used here because load() receives a sub-container
+        // (MergeExtensionConfigurationContainerBuilder) with no extensions registered.
+        // kernel.bundles IS available because the sub-container inherits the parameter bag.
+        $bundles = $container->getParameter('kernel.bundles');
+        if (\is_array($bundles) && isset($bundles['DoctrineBundle'])) {
             $loader->load('services_vault.yaml');
         }
 

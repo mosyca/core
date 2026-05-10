@@ -3,7 +3,7 @@ services:
         autowire: true
         autoconfigure: true
 
-    # Vault — Security, Clearances, ACL, CLI commands.
+    # Vault — Security, Clearances, ACL, CLI commands, REST controllers.
     # Loaded only when DoctrineBundle is present (see MosycaCoreExtension).
     Mosyca\Core\Vault\Repository\OperatorRepository: ~
     Mosyca\Core\Vault\Repository\McpTokenRepository: ~
@@ -13,6 +13,11 @@ services:
 
     Mosyca\Core\Vault\Acl\PluginAccessChecker: ~
 
+    # REST Controllers (autoconfigure adds the controller tag).
+    Mosyca\Core\Vault\Controller\AuthController: ~
+    Mosyca\Core\Vault\Controller\VaultController: ~
+
+    # CLI Commands (autoconfigure adds console.command tag via #[AsCommand]).
     Mosyca\Core\Vault\Console\CreateOperatorCommand: ~
     Mosyca\Core\Vault\Console\GenerateMcpTokenCommand: ~
     Mosyca\Core\Vault\Console\ListOperatorsCommand: ~
