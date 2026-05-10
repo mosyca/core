@@ -170,7 +170,7 @@ Every plugin supports six output formats — switch with `--format` or `?format=
 ```bash
 bin/console core:system:ping --format=table
 bin/console core:system:ping --format=text --template=simple_pong          # named template
-bin/console core:system:ping --format=text --template-string="Pong: {{ data.pong }}"  # inline Twig
+bin/console core:system:ping --format=text --template-inline="Pong: {{ data.pong }}"  # inline Twig
 ```
 
 ---

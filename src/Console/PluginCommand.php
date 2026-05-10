@@ -49,7 +49,7 @@ final class PluginCommand extends Command
         $this
             ->addOption('format', null, InputOption::VALUE_REQUIRED, 'Output format: json|yaml|raw|table|text|mcp', $this->plugin->getDefaultFormat())
             ->addOption('template', null, InputOption::VALUE_OPTIONAL, 'Named Twig template (use mosyca:plugin:show to list available names)')
-            ->addOption('template-string', null, InputOption::VALUE_OPTIONAL, 'Inline Twig template string (only used with --format=text)')
+            ->addOption('template-inline', null, InputOption::VALUE_OPTIONAL, 'Inline Twig template string (only used with --format=text)')
             ->addOption('no-confirm', null, InputOption::VALUE_NONE, 'Skip confirmation prompt for mutating plugins');
     }
 
@@ -74,8 +74,8 @@ final class PluginCommand extends Command
         $formatOpt = $input->getOption('format');
         $format = \is_string($formatOpt) ? $formatOpt : $this->plugin->getDefaultFormat();
 
-        // --template-string wins over --template; fall back to plugin default.
-        $templateStringOpt = $input->getOption('template-string');
+        // --template-inline wins over --template; fall back to plugin default.
+        $templateStringOpt = $input->getOption('template-inline');
         $templateOpt = $input->getOption('template');
         $template = \is_string($templateStringOpt) && '' !== $templateStringOpt
             ? $templateStringOpt
