@@ -74,6 +74,11 @@ final class PingPlugin implements PluginInterface
         return null;
     }
 
+    public function getTemplates(): array
+    {
+        return [];
+    }
+
     public function execute(array $args): PluginResult
     {
         return PluginResult::ok(

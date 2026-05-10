@@ -11,7 +11,7 @@ Mosyca Core is a PHP/Symfony framework where a single class — a **Plugin** —
 | Interface | How |
 |---|---|
 | 🖥️ CLI command | `bin/console shopware:order:get-margin --format=json` |
-| 🌐 REST endpoint | `POST /api/plugins/shopware:order:get-margin/run` |
+| 🌐 REST endpoint | `POST /api/plugins/shopware/order/get-margin/run` |
 | 🤖 MCP tool | Claude calls it directly via Claude Desktop |
 | 📄 OpenAPI entry | Auto-generated, always in sync |
 | 🧩 PHP service | Injected anywhere via Symfony DI |
@@ -83,8 +83,9 @@ final class OrderMarginPlugin implements PluginInterface
     public function getUsage(): string       { return 'Pass an order_id and get margin data back.'; }
     public function getTags(): array         { return ['shopware', 'finance']; }
     public function isMutating(): bool       { return false; }
-    public function getDefaultFormat(): string   { return 'json'; }
+    public function getDefaultFormat(): string    { return 'json'; }
     public function getDefaultTemplate(): ?string { return null; }
+    public function getTemplates(): array         { return []; }
     public function getRequiredScopes(): array    { return []; }
 
     public function getParameters(): array
@@ -168,7 +169,8 @@ Every plugin supports six output formats — switch with `--format` or `?format=
 
 ```bash
 bin/console core:system:ping --format=table
-bin/console core:system:ping --format=text --template="Pong: {{ data.pong }}"
+bin/console core:system:ping --format=text --template=simple_pong          # named template
+bin/console core:system:ping --format=text --template-string="Pong: {{ data.pong }}"  # inline Twig
 ```
 
 ---

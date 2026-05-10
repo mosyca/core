@@ -67,7 +67,7 @@ final class LedgerTailCommand extends Command
             $output->writeln('<comment>Following… (Ctrl+C to stop)</comment>');
             $offset = filesize($filePath) ?: 0;
 
-            /** @phpstan-ignore-next-line */
+            /* @phpstan-ignore-next-line */
             while (true) {
                 clearstatcache(true, $filePath);
                 $currentSize = filesize($filePath) ?: 0;

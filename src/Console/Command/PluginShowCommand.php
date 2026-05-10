@@ -46,10 +46,20 @@ final class PluginShowCommand extends Command
         $io->definitionList(
             ['Mode' => $plugin->isMutating() ? '⚠️  write (mutating)' : '✅ read-only'],
             ['Format' => $plugin->getDefaultFormat()],
-            ['Template' => $plugin->getDefaultTemplate() ?? '(default)'],
+            ['Default template' => $plugin->getDefaultTemplate() ?? '(generic default)'],
             ['Tags' => implode(', ', $plugin->getTags()) ?: '(none)'],
             ['Scopes' => implode(', ', $plugin->getRequiredScopes()) ?: '(none)'],
         );
+
+        $templates = $plugin->getTemplates();
+        if (!empty($templates)) {
+            $io->section('Named Templates');
+            $rows = [];
+            foreach ($templates as $label => $path) {
+                $rows[] = ["--template={$label}", $path];
+            }
+            $io->table(['Option', 'Template path'], $rows);
+        }
 
         $params = $plugin->getParameters();
         if (!empty($params)) {

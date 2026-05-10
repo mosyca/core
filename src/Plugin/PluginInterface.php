@@ -26,8 +26,8 @@ interface PluginInterface
      * Used as:
      *   MCP Tool name:   shopware_order_get_margin
      *   CLI command:     shopware:order:get-margin
-     *   REST route:      /api/plugins/shopware-order-get-margin/run
-     *   PWA page:        /plugins/shopware-order-get-margin
+     *   REST route:      /api/plugins/shopware/order/get-margin/run
+     *   PWA page:        /plugins/shopware/order/get-margin
      */
     public function getName(): string;
 
@@ -115,6 +115,20 @@ interface PluginInterface
      * Return null to use the generic default template.
      */
     public function getDefaultTemplate(): ?string;
+
+    /**
+     * Named Twig templates this plugin declares for 'text' format.
+     *
+     * Keys are short labels (e.g. 'slack', 'report').
+     * Values are template paths relative to the connector templates directory
+     * (e.g. 'order/margin-slack').
+     *
+     * Shown by mosyca:plugin:show and GET /api/plugins/{plugin} so operators
+     * know which --template= values are available.
+     *
+     * @return array<string, string> ['label' => 'path/to/template']
+     */
+    public function getTemplates(): array;
 
     /**
      * Execute the plugin.

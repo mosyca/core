@@ -97,8 +97,11 @@ final class PluginRunProcessor implements ProcessorInterface
             }
             $format ??= $plugin->getDefaultFormat();
 
+            // _template_string = inline Twig; _template = named template path.
             $template = null;
-            if (isset($body['_template']) && \is_string($body['_template'])) {
+            if (isset($body['_template_string']) && \is_string($body['_template_string'])) {
+                $template = $body['_template_string'];
+            } elseif (isset($body['_template']) && \is_string($body['_template'])) {
                 $template = $body['_template'];
             } elseif ($request instanceof Request && \is_string($request->query->get('template'))) {
                 $template = $request->query->get('template');
