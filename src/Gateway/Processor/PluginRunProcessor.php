@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * API Platform state processor for POST /api/plugins/{name}/run.
+ * API Platform state processor for POST /api/plugins/{connector}/{resource}/{action}/run.
  *
  * Executes the named plugin with the args from the request body and returns a
  * JSON response rendered via OutputRenderer.
@@ -34,7 +34,9 @@ final class PluginRunProcessor implements ProcessorInterface
 
     public function process(mixed $data, Operation $operation, array $uriVariables = [], array $context = []): Response
     {
-        $name = (string) ($uriVariables['name'] ?? '');
+        $name = ($uriVariables['connector'] ?? '')
+            .':'.($uriVariables['resource'] ?? '')
+            .':'.($uriVariables['action'] ?? '');
 
         if (!$this->registry->has($name)) {
             throw new NotFoundHttpException(\sprintf("Plugin '%s' not found.", $name));

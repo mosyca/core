@@ -133,7 +133,7 @@ bin/console help shopware:order:get-margin  # shows getUsage() + all parameters
 
 **REST:**
 ```bash
-curl -X POST https://yourapp.com/api/plugins/shopware:order:get-margin/run \
+curl -X POST https://yourapp.com/api/plugins/shopware/order/get-margin/run \
      -H "Content-Type: application/json" \
      -d '{"args": {"order_id": "018e-1234"}, "_format": "json"}'
 ```
@@ -204,12 +204,12 @@ return PluginResult::error('Order not found', ['order_id' => $id]);
 When `api-platform/core` is installed, every plugin gets REST endpoints automatically:
 
 ```
-GET  /api/plugins                          → list all plugins
-GET  /api/plugins/{name}                   → plugin detail + JSON Schema
-POST /api/plugins/{name}/run               → execute plugin
-GET  /api/mcp/tools                        → MCP list_tools format
-GET  /api/docs                             → Swagger UI
-GET  /api/docs.json                        → OpenAPI 3.0 spec
+GET  /api/plugins                                        → list all plugins
+GET  /api/plugins/{connector}/{resource}/{action}        → plugin detail + JSON Schema
+POST /api/plugins/{connector}/{resource}/{action}/run    → execute plugin
+GET  /api/mcp/tools                                      → MCP list_tools format
+GET  /api/docs                                           → Swagger UI
+GET  /api/docs.json                                      → OpenAPI 3.0 spec
 ```
 
 ---

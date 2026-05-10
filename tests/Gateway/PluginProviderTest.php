@@ -77,16 +77,24 @@ final class PluginProviderTest extends TestCase
     {
         $this->registry->register($this->makePlugin('core:system:ping', ['core']));
 
-        $result = $this->provider->provide(new Get(), uriVariables: ['name' => 'core:system:ping']);
+        $result = $this->provider->provide(
+            new Get(),
+            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+        );
 
         self::assertInstanceOf(PluginResource::class, $result);
         self::assertSame('core:system:ping', $result->name);
         self::assertSame('core', $result->connector);
+        self::assertSame('system', $result->resource);
+        self::assertSame('ping', $result->action);
     }
 
     public function testItemReturnsNullForUnknownPlugin(): void
     {
-        $result = $this->provider->provide(new Get(), uriVariables: ['name' => 'does:not:exist']);
+        $result = $this->provider->provide(
+            new Get(),
+            uriVariables: ['connector' => 'does', 'resource' => 'not', 'action' => 'exist'],
+        );
 
         self::assertNull($result);
     }
@@ -98,7 +106,10 @@ final class PluginProviderTest extends TestCase
         ]);
         $this->registry->register($plugin);
 
-        $result = $this->provider->provide(new Get(), uriVariables: ['name' => 'core:system:ping']);
+        $result = $this->provider->provide(
+            new Get(),
+            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+        );
 
         self::assertInstanceOf(PluginResource::class, $result);
         self::assertNotEmpty($result->usage);
@@ -117,6 +128,18 @@ final class PluginProviderTest extends TestCase
         self::assertSame('', $results[0]->usage);
     }
 
+    public function testCollectionPopulatesNameSegments(): void
+    {
+        $this->registry->register($this->makePlugin('shopware:order:get-margin', ['ecommerce']));
+
+        $results = $this->provider->provide(new GetCollection());
+
+        self::assertIsArray($results);
+        self::assertSame('shopware', $results[0]->connector);
+        self::assertSame('order', $results[0]->resource);
+        self::assertSame('get-margin', $results[0]->action);
+    }
+
     public function testJsonSchemaBuiltFromParameters(): void
     {
         $plugin = $this->makePlugin('core:system:test', [], parameters: [
@@ -125,7 +148,10 @@ final class PluginProviderTest extends TestCase
         ]);
         $this->registry->register($plugin);
 
-        $result = $this->provider->provide(new Get(), uriVariables: ['name' => 'core:system:test']);
+        $result = $this->provider->provide(
+            new Get(),
+            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'test'],
+        );
 
         self::assertInstanceOf(PluginResource::class, $result);
         self::assertSame('integer', $result->jsonSchema['properties']['limit']['type']);

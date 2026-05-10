@@ -33,15 +33,24 @@ final class PluginRunProcessorTest extends TestCase
     {
         $this->expectException(NotFoundHttpException::class);
 
-        $this->processor->process(null, new Post(), uriVariables: ['name' => 'does:not:exist']);
+        $this->processor->process(
+            null,
+            new Post(),
+            uriVariables: ['connector' => 'does', 'resource' => 'not', 'action' => 'exist'],
+        );
     }
 
     public function testReturnsJsonResponseOnSuccess(): void
     {
         $this->registry->register($this->makePlugin('core:system:ping', PluginResult::ok(['pong' => 'pong'], '✅ pong')));
 
-        $request = Request::create('/api/plugins/core:system:ping/run', 'POST', content: '{"args":{}}');
-        $response = $this->processor->process(null, new Post(), uriVariables: ['name' => 'core:system:ping'], context: ['request' => $request]);
+        $request = Request::create('/api/plugins/core/system/ping/run', 'POST', content: '{"args":{}}');
+        $response = $this->processor->process(
+            null,
+            new Post(),
+            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            context: ['request' => $request],
+        );
 
         self::assertInstanceOf(JsonResponse::class, $response);
         self::assertSame(Response::HTTP_OK, $response->getStatusCode());
@@ -55,8 +64,13 @@ final class PluginRunProcessorTest extends TestCase
 
         $this->registry->register($this->makePlugin('core:system:fail', PluginResult::error('Something failed')));
 
-        $request = Request::create('/api/plugins/core:system:fail/run', 'POST', content: '{"args":{}}');
-        $response = $processor->process(null, new Post(), uriVariables: ['name' => 'core:system:fail'], context: ['request' => $request]);
+        $request = Request::create('/api/plugins/core/system/fail/run', 'POST', content: '{"args":{}}');
+        $response = $processor->process(
+            null,
+            new Post(),
+            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'fail'],
+            context: ['request' => $request],
+        );
 
         self::assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $response->getStatusCode());
     }
@@ -74,8 +88,13 @@ final class PluginRunProcessorTest extends TestCase
 
         $this->registry->register($plugin);
 
-        $request = Request::create('/api/plugins/core:system:echo/run', 'POST', content: '{"args":{"message":"hello"}}');
-        $this->processor->process(null, new Post(), uriVariables: ['name' => 'core:system:echo'], context: ['request' => $request]);
+        $request = Request::create('/api/plugins/core/system/echo/run', 'POST', content: '{"args":{"message":"hello"}}');
+        $this->processor->process(
+            null,
+            new Post(),
+            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'echo'],
+            context: ['request' => $request],
+        );
     }
 
     public function testUsesFormatFromRequestBody(): void
@@ -90,8 +109,13 @@ final class PluginRunProcessorTest extends TestCase
             ->willReturn('success: true');
         $processor = new PluginRunProcessor($this->registry, $renderer);
 
-        $request = Request::create('/api/plugins/core:system:ping/run', 'POST', content: '{"args":{},"_format":"yaml"}');
-        $processor->process(null, new Post(), uriVariables: ['name' => 'core:system:ping'], context: ['request' => $request]);
+        $request = Request::create('/api/plugins/core/system/ping/run', 'POST', content: '{"args":{},"_format":"yaml"}');
+        $processor->process(
+            null,
+            new Post(),
+            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            context: ['request' => $request],
+        );
     }
 
     public function testWorksWithoutRequest(): void
@@ -99,7 +123,11 @@ final class PluginRunProcessorTest extends TestCase
         $this->registry->register($this->makePlugin('core:system:ping', PluginResult::ok([], 'ok')));
 
         // No request in context — should still work using plugin defaults.
-        $response = $this->processor->process(null, new Post(), uriVariables: ['name' => 'core:system:ping']);
+        $response = $this->processor->process(
+            null,
+            new Post(),
+            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+        );
 
         self::assertInstanceOf(Response::class, $response);
         self::assertSame(Response::HTTP_OK, $response->getStatusCode());

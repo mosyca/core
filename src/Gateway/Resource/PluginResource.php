@@ -18,10 +18,14 @@ use Mosyca\Core\Gateway\Provider\PluginProvider;
  * API Platform generates all endpoints, OpenAPI entries,
  * and Swagger UI entries automatically from this class.
  *
+ * Plugin names follow the {connector}:{resource}:{action} convention.
+ * The three segments are mapped to separate URL path segments to produce
+ * clean, encoding-free URIs:
+ *
  * Routes:
- *   GET  /api/plugins                   → list all plugins
- *   GET  /api/plugins/{name}            → plugin detail + parameter schema
- *   POST /api/plugins/{name}/run        → execute plugin, returns PluginResult JSON
+ *   GET  /api/plugins                                  → list all plugins
+ *   GET  /api/plugins/{connector}/{resource}/{action}  → plugin detail + parameter schema
+ *   POST /api/plugins/{connector}/{resource}/{action}/run → execute plugin
  */
 #[ApiResource(
     shortName: 'Plugin',
@@ -33,12 +37,12 @@ use Mosyca\Core\Gateway\Provider\PluginProvider;
             provider: PluginProvider::class,
         ),
         new Get(
-            uriTemplate: '/plugins/{name}',
+            uriTemplate: '/plugins/{connector}/{resource}/{action}',
             description: 'Get plugin metadata and parameter schema.',
             provider: PluginProvider::class,
         ),
         new Post(
-            uriTemplate: '/plugins/{name}/run',
+            uriTemplate: '/plugins/{connector}/{resource}/{action}/run',
             description: 'Execute a plugin. Body: {"args":{...},"_format":"json","_template":null}.',
             input: false,
             output: false,
@@ -51,11 +55,35 @@ use Mosyca\Core\Gateway\Provider\PluginProvider;
 final class PluginResource
 {
     /**
-     * Unique plugin identifier — used as the REST resource ID.
+     * Connector segment of the plugin name (first part of connector:resource:action).
+     *
+     * Example: core, shopware, spotify
+     */
+    #[ApiProperty(identifier: true, description: 'Connector segment (e.g. core, shopware).')]
+    public string $connector = '';
+
+    /**
+     * Resource segment of the plugin name (second part of connector:resource:action).
+     *
+     * Example: system, order, product
+     */
+    #[ApiProperty(identifier: true, description: 'Resource segment (e.g. system, order).')]
+    public string $resource = '';
+
+    /**
+     * Action segment of the plugin name (third part of connector:resource:action).
+     *
+     * Example: ping, get-margin, list
+     */
+    #[ApiProperty(identifier: true, description: 'Action segment (e.g. ping, get-margin).')]
+    public string $action = '';
+
+    /**
+     * Full canonical plugin name — convenience field, not a URL identifier.
      *
      * Example: core:system:ping
      */
-    #[ApiProperty(identifier: true, description: 'Unique plugin name (connector:resource:action).')]
+    #[ApiProperty(identifier: false, description: 'Full plugin name (connector:resource:action).')]
     public string $name = '';
 
     #[ApiProperty(description: 'One-line description shown in Swagger UI and MCP list_tools.')]
@@ -100,7 +128,4 @@ final class PluginResource
 
     #[ApiProperty(description: 'Default Twig template name. null = generic default.')]
     public ?string $defaultTemplate = null;
-
-    #[ApiProperty(description: 'Connector prefix (first segment of plugin name, e.g. core, shopware6).')]
-    public string $connector = '';
 }

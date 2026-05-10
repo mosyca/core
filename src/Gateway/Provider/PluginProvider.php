@@ -13,7 +13,8 @@ use Mosyca\Core\Plugin\PluginRegistry;
 /**
  * API Platform state provider for PluginResource.
  *
- * Handles both collection (GET /api/plugins) and item (GET /api/plugins/{name}).
+ * Handles both collection (GET /api/plugins) and item
+ * (GET /api/plugins/{connector}/{resource}/{action}).
  *
  * @implements ProviderInterface<PluginResource>
  */
@@ -25,9 +26,9 @@ final class PluginProvider implements ProviderInterface
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
-        // Item operation: GET /api/plugins/{name}
-        if (isset($uriVariables['name'])) {
-            $name = (string) $uriVariables['name'];
+        // Item operation: GET /api/plugins/{connector}/{resource}/{action}
+        if (isset($uriVariables['connector'])) {
+            $name = $this->nameFromVars($uriVariables);
 
             if (!$this->registry->has($name)) {
                 return null;
@@ -51,23 +52,39 @@ final class PluginProvider implements ProviderInterface
 
     private function toResource(PluginInterface $plugin, bool $full): PluginResource
     {
-        $resource = new PluginResource();
-        $resource->name = $plugin->getName();
-        $resource->description = $plugin->getDescription();
-        $resource->tags = $plugin->getTags();
-        $resource->mutating = $plugin->isMutating();
-        $resource->defaultFormat = $plugin->getDefaultFormat();
-        $resource->defaultTemplate = $plugin->getDefaultTemplate();
-        $resource->connector = explode(':', $plugin->getName(), 2)[0];
+        $parts = explode(':', $plugin->getName(), 3);
+
+        $res = new PluginResource();
+        $res->name = $plugin->getName();
+        $res->connector = $parts[0];
+        $res->resource = $parts[1] ?? '';
+        $res->action = $parts[2] ?? '';
+        $res->description = $plugin->getDescription();
+        $res->tags = $plugin->getTags();
+        $res->mutating = $plugin->isMutating();
+        $res->defaultFormat = $plugin->getDefaultFormat();
+        $res->defaultTemplate = $plugin->getDefaultTemplate();
 
         if ($full) {
-            $resource->usage = $plugin->getUsage();
-            $resource->parameters = $plugin->getParameters();
-            $resource->requiredScopes = $plugin->getRequiredScopes();
-            $resource->jsonSchema = $this->buildJsonSchema($plugin);
+            $res->usage = $plugin->getUsage();
+            $res->parameters = $plugin->getParameters();
+            $res->requiredScopes = $plugin->getRequiredScopes();
+            $res->jsonSchema = $this->buildJsonSchema($plugin);
         }
 
-        return $resource;
+        return $res;
+    }
+
+    /**
+     * Reconstruct the canonical plugin name from URI variables.
+     *
+     * @param array<string, mixed> $uriVariables
+     */
+    private function nameFromVars(array $uriVariables): string
+    {
+        return ($uriVariables['connector'] ?? '')
+            .':'.($uriVariables['resource'] ?? '')
+            .':'.($uriVariables['action'] ?? '');
     }
 
     /** @return array<string, mixed> */
