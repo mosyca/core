@@ -15,6 +15,7 @@
     "homepage": "https://mosyca.dev",
     "require": {
         "php": ">=8.2",
+        "api-platform/core": "^3.4",
         "symfony/config": "^7.1",
         "symfony/console": "^7.1",
         "symfony/dependency-injection": "^7.1",

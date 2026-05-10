@@ -33,3 +33,9 @@ services:
     # Built-in management commands (autoconfigure adds console.command tag via #[AsCommand]).
     Mosyca\Core\Console\Command\PluginListCommand: ~
     Mosyca\Core\Console\Command\PluginShowCommand: ~
+
+    # Gateway — API Platform providers and processors.
+    # Registered explicitly so the bundle works without a wildcard resource scan.
+    Mosyca\Core\Gateway\Provider\PluginProvider: ~
+    Mosyca\Core\Gateway\Provider\McpToolProvider: ~
+    Mosyca\Core\Gateway\Processor\PluginRunProcessor: ~

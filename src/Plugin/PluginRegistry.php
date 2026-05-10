@@ -33,4 +33,33 @@ final class PluginRegistry
     {
         return $this->plugins;
     }
+
+    /**
+     * Return a filtered subset of the registry.
+     *
+     * @param string|null $connector Filter by connector prefix (e.g. 'shopware6' matches 'shopware6:*')
+     * @param string|null $tag       Filter by tag
+     * @param bool|null   $mutating  Filter by mutating status
+     *
+     * @return array<string, PluginInterface>
+     */
+    public function filter(?string $connector = null, ?string $tag = null, ?bool $mutating = null): array
+    {
+        return array_filter(
+            $this->plugins,
+            static function (PluginInterface $plugin) use ($connector, $tag, $mutating): bool {
+                if (null !== $connector && !str_starts_with($plugin->getName(), $connector.':')) {
+                    return false;
+                }
+                if (null !== $tag && !\in_array($tag, $plugin->getTags(), true)) {
+                    return false;
+                }
+                if (null !== $mutating && $plugin->isMutating() !== $mutating) {
+                    return false;
+                }
+
+                return true;
+            },
+        );
+    }
 }
