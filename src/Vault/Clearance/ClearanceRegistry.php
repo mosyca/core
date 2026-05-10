@@ -53,31 +53,37 @@ final class ClearanceRegistry
                 name: 'superadmin',
                 allowAll: true,
                 allowMutating: true,
+                logLevel: 'info',
             ),
             'admin' => new ClearanceDefinition(
                 name: 'admin',
                 allowMutating: true,
                 allowPatterns: ['*'],
+                logLevel: 'info',
             ),
             'operator' => new ClearanceDefinition(
                 name: 'operator',
                 allowMutating: false,
                 allowPatterns: ['*'],
+                logLevel: 'warning',
             ),
             'readonly' => new ClearanceDefinition(
                 name: 'readonly',
                 allowMutating: false,
                 allowPatterns: ['*'],
+                logLevel: 'off',
             ),
             'automation' => new ClearanceDefinition(
                 name: 'automation',
                 allowMutating: true,
                 allowPatterns: ['*'],
+                logLevel: 'warning',
             ),
             'dev' => new ClearanceDefinition(
                 name: 'dev',
                 allowAll: true,
                 allowMutating: true,
+                logLevel: 'debug',
             ),
         ];
     }
@@ -98,6 +104,7 @@ final class ClearanceRegistry
                 allowMutating: (bool) ($config['allow_mutating'] ?? false),
                 allowPatterns: (array) ($config['allow_patterns'] ?? []),
                 denyPatterns: (array) ($config['deny_patterns'] ?? []),
+                logLevel: \is_string($config['log_level'] ?? null) ? $config['log_level'] : 'info',
             );
         }
     }

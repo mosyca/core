@@ -15,6 +15,7 @@ final class ClearanceDefinition
     /**
      * @param string[] $allowPatterns Glob patterns for allowed plugin names (e.g. ['*', 'core:*'])
      * @param string[] $denyPatterns  Glob patterns that override allow (e.g. ['shopware:*'])
+     * @param string   $logLevel      Minimum Plugin Log level: debug|info|warning|error|off
      */
     public function __construct(
         public readonly string $name,
@@ -22,6 +23,7 @@ final class ClearanceDefinition
         public readonly bool $allowMutating = false,
         public readonly array $allowPatterns = [],
         public readonly array $denyPatterns = [],
+        public readonly string $logLevel = 'info',
     ) {
     }
 

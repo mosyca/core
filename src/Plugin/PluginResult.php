@@ -9,6 +9,9 @@ namespace Mosyca\Core\Plugin;
  *
  * The Renderer converts this into the requested output format:
  * json, yaml, raw, table, text (twig), mcp.
+ *
+ * V0.8: Carries Depot and Ledger metadata decided by the plugin inside run().
+ * Both systems are opt-in — defaults are off.
  */
 final class PluginResult
 {
@@ -22,6 +25,16 @@ final class PluginResult
         public readonly array $embedded = [],
         /** @var array<string, mixed> */
         public readonly array $metadata = [],
+        // — V0.8 Depot — //
+        /** Whether this result may be written to Depot if the caller requests it. */
+        public readonly bool $depotEligible = false,
+        /** Depot TTL in seconds. Only relevant when depotEligible = true. */
+        public readonly int $depotTtl = 3600,
+        // — V0.8 Ledger — //
+        /** @var array<string, mixed>|null Ledger payload for the Plugin Log. null = no plugin log entry. */
+        public readonly ?array $ledgerPayload = null,
+        /** Ledger level for this payload. Only relevant when ledgerPayload != null. */
+        public readonly string $ledgerLevel = 'info',
     ) {
     }
 
@@ -59,6 +72,73 @@ final class PluginResult
     }
 
     /**
+     * Mark this result as depot-eligible with a TTL.
+     *
+     * The caller still has to actively request depot caching per call (double opt-in).
+     * Scaffold plugins: PluginRunProcessor strips eligibility regardless of this flag.
+     */
+    public function withDepot(int $ttl = 3600): self
+    {
+        return new self(
+            success: $this->success,
+            data: $this->data,
+            summary: $this->summary,
+            links: $this->links,
+            embedded: $this->embedded,
+            metadata: $this->metadata,
+            depotEligible: true,
+            depotTtl: $ttl,
+            ledgerPayload: $this->ledgerPayload,
+            ledgerLevel: $this->ledgerLevel,
+        );
+    }
+
+    /**
+     * Strip depot eligibility.
+     *
+     * Called by PluginRunProcessor for scaffold plugins — cannot be overridden.
+     */
+    public function withoutDepot(): self
+    {
+        return new self(
+            success: $this->success,
+            data: $this->data,
+            summary: $this->summary,
+            links: $this->links,
+            embedded: $this->embedded,
+            metadata: $this->metadata,
+            depotEligible: false,
+            depotTtl: $this->depotTtl,
+            ledgerPayload: $this->ledgerPayload,
+            ledgerLevel: $this->ledgerLevel,
+        );
+    }
+
+    /**
+     * Attach a plugin log payload.
+     *
+     * The plugin is responsible for stripping PII before calling this.
+     * No request parameters may be passed here directly.
+     *
+     * @param array<string, mixed> $payload
+     */
+    public function withLedger(string $level = 'info', array $payload = []): self
+    {
+        return new self(
+            success: $this->success,
+            data: $this->data,
+            summary: $this->summary,
+            links: $this->links,
+            embedded: $this->embedded,
+            metadata: $this->metadata,
+            depotEligible: $this->depotEligible,
+            depotTtl: $this->depotTtl,
+            ledgerPayload: $payload,
+            ledgerLevel: $level,
+        );
+    }
+
+    /**
      * Add HATEOAS links.
      *
      * @param array<string, string> $links ['self' => '/api/...', 'order' => '/api/...']
@@ -72,6 +152,10 @@ final class PluginResult
             links: $links,
             embedded: $this->embedded,
             metadata: $this->metadata,
+            depotEligible: $this->depotEligible,
+            depotTtl: $this->depotTtl,
+            ledgerPayload: $this->ledgerPayload,
+            ledgerLevel: $this->ledgerLevel,
         );
     }
 
@@ -89,6 +173,10 @@ final class PluginResult
             links: $this->links,
             embedded: $embedded,
             metadata: $this->metadata,
+            depotEligible: $this->depotEligible,
+            depotTtl: $this->depotTtl,
+            ledgerPayload: $this->ledgerPayload,
+            ledgerLevel: $this->ledgerLevel,
         );
     }
 

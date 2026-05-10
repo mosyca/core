@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\DependencyInjection;
 
+use Mosyca\Core\Depot\DepotInterface;
+use Mosyca\Core\Depot\FilesystemDepot;
 use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Vault\Clearance\ClearanceRegistry;
 use Symfony\Component\Config\FileLocator;
@@ -37,15 +39,26 @@ final class MosycaCoreExtension extends Extension implements PrependExtensionInt
 
         // ClearanceRegistry — optional custom YAML path from project config/mosyca/clearances.yaml
         $projectDir = $container->getParameter('kernel.project_dir');
-        $clearancesYaml = \is_string($projectDir)
-            ? $projectDir.'/config/mosyca/clearances.yaml'
-            : null;
+        \assert(\is_string($projectDir));
 
+        $clearancesYaml = $projectDir.'/config/mosyca/clearances.yaml';
         $def = new Definition(ClearanceRegistry::class, [
-            null !== $clearancesYaml && file_exists($clearancesYaml) ? $clearancesYaml : null,
+            file_exists($clearancesYaml) ? $clearancesYaml : null,
         ]);
         $def->setPublic(false);
         $container->setDefinition(ClearanceRegistry::class, $def);
+
+        // Depot — optional. Enabled when mosyca.depot_dir is set (defaults to var/depot).
+        $depotDir = $projectDir.'/var/depot';
+        $depotDef = new Definition(FilesystemDepot::class, [$depotDir]);
+        $depotDef->setPublic(false);
+        $container->setDefinition(FilesystemDepot::class, $depotDef);
+        $container->setAlias(DepotInterface::class, FilesystemDepot::class);
+
+        // Ledger log dir — defaults to var/log/mosyca
+        $logDir = $projectDir.'/var/log/mosyca';
+        $container->setParameter('mosyca.log_dir', $logDir);
+        $container->setParameter('mosyca.depot_dir', $depotDir);
     }
 
     /**

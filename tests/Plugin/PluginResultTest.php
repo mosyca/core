@@ -107,4 +107,105 @@ final class PluginResultTest extends TestCase
         self::assertNotEmpty($result->links);
         self::assertNotEmpty($result->embedded);
     }
+
+    // ── V0.8: Depot builder ───────────────────────────────────────────────────
+
+    public function testDefaultDepotEligibilityIsFalse(): void
+    {
+        $result = PluginResult::ok([], 'ok');
+
+        self::assertFalse($result->depotEligible);
+        self::assertSame(3600, $result->depotTtl);
+    }
+
+    public function testWithDepotSetsEligibility(): void
+    {
+        $original = PluginResult::ok([], 'ok');
+        $cached = $original->withDepot(ttl: 7200);
+
+        self::assertNotSame($original, $cached);
+        self::assertFalse($original->depotEligible); // immutable
+        self::assertTrue($cached->depotEligible);
+        self::assertSame(7200, $cached->depotTtl);
+    }
+
+    public function testWithDepotDefaultTtl(): void
+    {
+        $result = PluginResult::ok([], 'ok')->withDepot();
+
+        self::assertTrue($result->depotEligible);
+        self::assertSame(3600, $result->depotTtl);
+    }
+
+    public function testWithoutDepotStripsEligibility(): void
+    {
+        $eligible = PluginResult::ok([], 'ok')->withDepot(ttl: 9000);
+        $stripped = $eligible->withoutDepot();
+
+        self::assertNotSame($eligible, $stripped);
+        self::assertTrue($eligible->depotEligible);   // original unchanged
+        self::assertFalse($stripped->depotEligible);
+        self::assertSame(9000, $stripped->depotTtl);  // TTL preserved (only eligibility stripped)
+    }
+
+    public function testWithDepotPreservesOtherFields(): void
+    {
+        $result = PluginResult::error('oops')
+            ->withLedger(level: 'warning', payload: ['reason' => 'test'])
+            ->withDepot(ttl: 600);
+
+        self::assertFalse($result->success);
+        self::assertTrue($result->depotEligible);
+        self::assertSame(['reason' => 'test'], $result->ledgerPayload);
+    }
+
+    // ── V0.8: Ledger builder ─────────────────────────────────────────────────
+
+    public function testDefaultLedgerPayloadIsNull(): void
+    {
+        $result = PluginResult::ok([], 'ok');
+
+        self::assertNull($result->ledgerPayload);
+        self::assertSame('info', $result->ledgerLevel);
+    }
+
+    public function testWithLedgerSetsPayload(): void
+    {
+        $original = PluginResult::ok([], 'ok');
+        $logged = $original->withLedger(level: 'warning', payload: ['count' => 42]);
+
+        self::assertNotSame($original, $logged);
+        self::assertNull($original->ledgerPayload); // immutable
+        self::assertSame(['count' => 42], $logged->ledgerPayload);
+        self::assertSame('warning', $logged->ledgerLevel);
+    }
+
+    public function testWithLedgerDefaultLevel(): void
+    {
+        $result = PluginResult::ok([], 'ok')->withLedger(payload: ['x' => 1]);
+
+        self::assertSame('info', $result->ledgerLevel);
+    }
+
+    public function testWithLedgerPreservesDepot(): void
+    {
+        $result = PluginResult::ok([], 'ok')
+            ->withDepot(ttl: 1800)
+            ->withLedger(level: 'info', payload: ['items' => 5]);
+
+        self::assertTrue($result->depotEligible);
+        self::assertSame(1800, $result->depotTtl);
+        self::assertSame(['items' => 5], $result->ledgerPayload);
+    }
+
+    public function testScaffoldGuardPattern(): void
+    {
+        // Simulates what PluginRunProcessor does for scaffold plugins
+        $result = PluginResult::ok(['pii' => 'data'], 'raw')->withDepot(ttl: 3600);
+        self::assertTrue($result->depotEligible);
+
+        $guarded = $result->withoutDepot();
+        self::assertFalse($guarded->depotEligible);
+        self::assertSame(['pii' => 'data'], $guarded->data); // data unchanged
+    }
 }

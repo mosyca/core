@@ -40,3 +40,36 @@ services:
     Mosyca\Core\Gateway\Provider\McpToolProvider: ~
     Mosyca\Core\Gateway\Processor\PluginRunProcessor: ~
 
+    # — V0.8: Depot (per-operator filesystem cache) —
+    Mosyca\Core\Depot\FilesystemDepot:
+        arguments:
+            $depotDir: '%mosyca.depot_dir%'
+
+    # — V0.8: Ledger — Access Log + Plugin Log —
+    Mosyca\Core\Ledger\AccessLog:
+        arguments:
+            $logDir: '%mosyca.log_dir%'
+
+    Mosyca\Core\Ledger\PluginLog:
+        arguments:
+            $logDir: '%mosyca.log_dir%'
+
+    # — V0.8: Depot CLI commands —
+    Mosyca\Core\Depot\Console\DepotListCommand: ~
+    Mosyca\Core\Depot\Console\DepotClearCommand: ~
+
+    # — V0.8: Ledger CLI commands —
+    Mosyca\Core\Ledger\Console\LedgerTailCommand:
+        arguments:
+            $logDir: '%mosyca.log_dir%'
+    Mosyca\Core\Ledger\Console\LedgerSearchCommand:
+        arguments:
+            $logDir: '%mosyca.log_dir%'
+
+    # — V0.8: Depot REST controller —
+    Mosyca\Core\Depot\Controller\DepotController: ~
+
+    # — V0.8: Ledger REST controller —
+    Mosyca\Core\Ledger\Controller\LedgerController:
+        arguments:
+            $logDir: '%mosyca.log_dir%'
