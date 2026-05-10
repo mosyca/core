@@ -20,6 +20,26 @@ Write the plugin once. Never write an adapter again.
 
 ---
 
+## Who is this for?
+
+Mosyca is aimed at **senior PHP engineers and software architects** who already know
+Symfony, API Platform, and Composer — and are tired of writing the same adapter
+boilerplate every time a new interface is required for the same business logic.
+
+**You will feel at home if you:**
+- Have written a Symfony bundle or compiler pass before
+- Use API Platform and know what a `ProviderInterface` is
+- Maintain one or more external API integrations (Shopware, Stripe, ERPs, …)
+- Want Claude (Desktop or Code) to call your PHP business logic via MCP — without
+  hand-rolling a separate Node.js MCP server
+
+**Mosyca is not for:**
+- PHP / Symfony beginners (the framework assumes deep familiarity)
+- Teams looking for a no-code solution
+- Non-Symfony PHP stacks (Laravel, Slim, etc.)
+
+---
+
 ## Requirements
 
 - PHP 8.2+
