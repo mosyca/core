@@ -16,10 +16,15 @@
     "require": {
         "php": ">=8.2",
         "api-platform/core": "^3.4",
+        "doctrine/doctrine-bundle": "^2.12",
+        "doctrine/orm": "^3.1",
+        "lexik/jwt-authentication-bundle": "^3.1",
         "symfony/config": "^7.1",
         "symfony/console": "^7.1",
         "symfony/dependency-injection": "^7.1",
         "symfony/http-kernel": "^7.1",
+        "symfony/password-hasher": "^7.1",
+        "symfony/security-bundle": "^7.1",
         "symfony/yaml": "^7.1",
         "twig/twig": "^3.0"
     },

@@ -39,3 +39,4 @@ services:
     Mosyca\Core\Gateway\Provider\PluginProvider: ~
     Mosyca\Core\Gateway\Provider\McpToolProvider: ~
     Mosyca\Core\Gateway\Processor\PluginRunProcessor: ~
+

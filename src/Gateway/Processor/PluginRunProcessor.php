@@ -8,6 +8,7 @@ use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
 use Mosyca\Core\Plugin\PluginRegistry;
 use Mosyca\Core\Renderer\OutputRendererInterface;
+use Mosyca\Core\Vault\Acl\PluginAccessChecker;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,9 +20,6 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * Executes the named plugin with the args from the request body and returns a
  * JSON response rendered via OutputRenderer.
  *
- * V0.5 scope: Vault ACL, Depot storage, and Ledger logging are not yet
- * implemented — they will be wired in V0.7 / V0.8.
- *
  * @implements ProcessorInterface<null, Response>
  */
 final class PluginRunProcessor implements ProcessorInterface
@@ -29,6 +27,7 @@ final class PluginRunProcessor implements ProcessorInterface
     public function __construct(
         private readonly PluginRegistry $registry,
         private readonly OutputRendererInterface $renderer,
+        private readonly ?PluginAccessChecker $accessChecker = null,
     ) {
     }
 
@@ -43,6 +42,9 @@ final class PluginRunProcessor implements ProcessorInterface
         }
 
         $plugin = $this->registry->get($name);
+
+        // V0.7: ACL check — null when Vault is not configured (dev / no-auth mode)
+        $this->accessChecker?->assertCanRun($plugin);
 
         // Read request body — API Platform passes `input: false`, so $data is null.
         $request = $context['request'] ?? null;

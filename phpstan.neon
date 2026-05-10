@@ -4,3 +4,7 @@ parameters:
         - src/
         - tests/
         - examples/
+    ignoreErrors:
+        # Doctrine assigns entity IDs via reflection — PHPStan cannot see the int assignment.
+        - identifier: property.unusedType
+          path: src/Vault/Entity/
