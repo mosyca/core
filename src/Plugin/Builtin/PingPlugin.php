@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace Mosyca\Core\Plugin\Builtin;
 
 use Mosyca\Core\Plugin\Attribute\AsPlugin;
-use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Plugin\PluginTrait;
+use Mosyca\Core\Plugin\TemplateAwarePluginInterface;
 
 #[AsPlugin]
-final class PingPlugin implements PluginInterface
+final class PingPlugin implements TemplateAwarePluginInterface
 {
+    use PluginTrait;
+
     public function getName(): string
     {
         return 'core:system:ping';
@@ -49,11 +52,7 @@ final class PingPlugin implements PluginInterface
         ];
     }
 
-    public function getRequiredScopes(): array
-    {
-        return [];
-    }
-
+    /** @return string[] */
     public function getTags(): array
     {
         return ['core', 'debug'];
@@ -62,21 +61,6 @@ final class PingPlugin implements PluginInterface
     public function isMutating(): bool
     {
         return false;
-    }
-
-    public function getDefaultFormat(): string
-    {
-        return 'json';
-    }
-
-    public function getDefaultTemplate(): ?string
-    {
-        return null;
-    }
-
-    public function getTemplates(): array
-    {
-        return [];
     }
 
     public function execute(array $args): PluginResult

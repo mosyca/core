@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mosyca\Core\Console\Command;
 
 use Mosyca\Core\Plugin\PluginRegistry;
+use Mosyca\Core\Plugin\TemplateAwarePluginInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -51,14 +52,16 @@ final class PluginShowCommand extends Command
             ['Scopes' => implode(', ', $plugin->getRequiredScopes()) ?: '(none)'],
         );
 
-        $templates = $plugin->getTemplates();
-        if (!empty($templates)) {
-            $io->section('Named Templates');
-            $rows = [];
-            foreach ($templates as $label => $path) {
-                $rows[] = ["--template={$label}", $path];
+        if ($plugin instanceof TemplateAwarePluginInterface) {
+            $templates = $plugin->getTemplates();
+            if (!empty($templates)) {
+                $io->section('Named Templates');
+                $rows = [];
+                foreach ($templates as $label => $path) {
+                    $rows[] = ["--template={$label}", $path];
+                }
+                $io->table(['Option', 'Template path'], $rows);
             }
-            $io->table(['Option', 'Template path'], $rows);
         }
 
         $params = $plugin->getParameters();
