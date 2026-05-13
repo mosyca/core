@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Tests\Console;
 
+use Mosyca\Core\Console\ActionCommand;
 use Mosyca\Core\Console\ConsoleAdapter;
-use Mosyca\Core\Console\PluginCommand;
 use Mosyca\Core\Tests\Functional\TestKernel;
 use Symfony\Bundle\FrameworkBundle\Console\Application;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -32,7 +32,7 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         self::assertInstanceOf(ConsoleAdapter::class, $adapter);
     }
 
-    public function testPluginNamesAreExposedAsCommands(): void
+    public function testActionNamesAreExposedAsCommands(): void
     {
         self::bootKernel();
         /** @var ConsoleAdapter $adapter */
@@ -43,7 +43,7 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         self::assertContains('core:system:echo', $names);
     }
 
-    public function testAdapterBuildsPluginCommandForPing(): void
+    public function testAdapterBuildsActionCommandForPing(): void
     {
         self::bootKernel();
         /** @var ConsoleAdapter $adapter */
@@ -51,17 +51,17 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
 
         $command = $adapter->get('core:system:ping');
 
-        self::assertInstanceOf(PluginCommand::class, $command);
+        self::assertInstanceOf(ActionCommand::class, $command);
         self::assertSame('core:system:ping', $command->getName());
     }
 
-    public function testPluginListCommandRunsInApplication(): void
+    public function testActionListCommandRunsInApplication(): void
     {
         $kernel = self::bootKernel();
         $application = new Application($kernel);
         $application->setAutoExit(false);
 
-        $tester = new CommandTester($application->find('mosyca:plugin:list'));
+        $tester = new CommandTester($application->find('mosyca:action:list'));
         $exitCode = $tester->execute([]);
 
         self::assertSame(0, $exitCode);
@@ -69,13 +69,13 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         self::assertStringContainsString('core:system:echo', $tester->getDisplay());
     }
 
-    public function testPluginShowCommandRunsInApplication(): void
+    public function testActionShowCommandRunsInApplication(): void
     {
         $kernel = self::bootKernel();
         $application = new Application($kernel);
         $application->setAutoExit(false);
 
-        $tester = new CommandTester($application->find('mosyca:plugin:show'));
+        $tester = new CommandTester($application->find('mosyca:action:show'));
         $exitCode = $tester->execute(['name' => 'core:system:ping']);
 
         self::assertSame(0, $exitCode);
@@ -83,7 +83,7 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         self::assertStringContainsString('pong', $tester->getDisplay());
     }
 
-    public function testPingPluginCommandRunsViaApplication(): void
+    public function testPingActionCommandRunsViaApplication(): void
     {
         $kernel = self::bootKernel();
         $application = new Application($kernel);
@@ -98,13 +98,13 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         self::assertStringContainsString('pong', $output);
     }
 
-    public function testPluginShowCommandFailsForUnknownPlugin(): void
+    public function testActionShowCommandFailsForUnknownAction(): void
     {
         $kernel = self::bootKernel();
         $application = new Application($kernel);
         $application->setAutoExit(false);
 
-        $tester = new CommandTester($application->find('mosyca:plugin:show'));
+        $tester = new CommandTester($application->find('mosyca:action:show'));
         $exitCode = $tester->execute(['name' => 'does:not:exist']);
 
         self::assertSame(1, $exitCode);

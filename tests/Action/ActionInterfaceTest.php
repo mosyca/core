@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace Mosyca\Core\Tests\Plugin;
+namespace Mosyca\Core\Tests\Action;
 
+use Mosyca\Core\Action\ActionInterface;
+use Mosyca\Core\Action\ActionResult;
+use Mosyca\Core\Action\Builtin\PingAction;
 use Mosyca\Core\Context\ExecutionContextInterface;
-use Mosyca\Core\Plugin\Builtin\PingPlugin;
-use Mosyca\Core\Plugin\PluginInterface;
-use Mosyca\Core\Plugin\PluginResult;
 use PHPUnit\Framework\TestCase;
 
-final class PluginInterfaceTest extends TestCase
+final class ActionInterfaceTest extends TestCase
 {
-    private PingPlugin $plugin;
+    private PingAction $plugin;
     private ExecutionContextInterface $context;
 
     protected function setUp(): void
     {
-        $this->plugin = new PingPlugin();
+        $this->plugin = new PingAction();
         $this->context = $this->createMock(ExecutionContextInterface::class);
         $this->context->method('getTenantId')->willReturn('default');
         $this->context->method('isAclBypassed')->willReturn(false);
@@ -25,12 +25,12 @@ final class PluginInterfaceTest extends TestCase
 
     public function testImplementsInterface(): void
     {
-        self::assertInstanceOf(PluginInterface::class, $this->plugin);
+        self::assertInstanceOf(ActionInterface::class, $this->plugin);
     }
 
     public function testGetNameFollowsConvention(): void
     {
-        // Convention: {connector}:{resource}:{action} — all lowercase, hyphens allowed
+        // Convention: {plugin_name}:{resource}:{action} — all lowercase, hyphens allowed
         self::assertMatchesRegularExpression(
             '/^[a-z][a-z0-9-]*:[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$/',
             $this->plugin->getName(),
@@ -79,11 +79,11 @@ final class PluginInterfaceTest extends TestCase
         );
     }
 
-    public function testExecuteReturnsPluginResult(): void
+    public function testExecuteReturnsActionResult(): void
     {
         $result = $this->plugin->execute([], $this->context);
 
-        self::assertInstanceOf(PluginResult::class, $result);
+        self::assertInstanceOf(ActionResult::class, $result);
     }
 
     public function testExecuteSucceeds(): void

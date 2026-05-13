@@ -6,20 +6,20 @@ namespace Mosyca\Core\Gateway\Provider;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
+use Mosyca\Core\Action\ActionInterface;
+use Mosyca\Core\Action\ActionRegistry;
 use Mosyca\Core\Gateway\Resource\McpToolResource;
-use Mosyca\Core\Plugin\PluginInterface;
-use Mosyca\Core\Plugin\PluginRegistry;
 
 /**
  * API Platform state provider for McpToolResource.
  *
- * Returns every plugin as an MCP tool (list_tools format).
+ * Returns every action as an MCP tool (list_tools format).
  *
  * @implements ProviderInterface<McpToolResource>
  */
 final class McpToolProvider implements ProviderInterface
 {
-    public function __construct(private readonly PluginRegistry $registry)
+    public function __construct(private readonly ActionRegistry $registry)
     {
     }
 
@@ -27,12 +27,12 @@ final class McpToolProvider implements ProviderInterface
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): array
     {
         return array_values(array_map(
-            fn (PluginInterface $p): McpToolResource => $this->toTool($p),
+            fn (ActionInterface $a): McpToolResource => $this->toTool($a),
             $this->registry->all(),
         ));
     }
 
-    private function toTool(PluginInterface $plugin): McpToolResource
+    private function toTool(ActionInterface $plugin): McpToolResource
     {
         $tool = new McpToolResource();
         $tool->name = str_replace([':'], ['_'], $plugin->getName());
@@ -43,7 +43,7 @@ final class McpToolProvider implements ProviderInterface
     }
 
     /** @return array<string, mixed> */
-    private function buildSchema(PluginInterface $plugin): array
+    private function buildSchema(ActionInterface $plugin): array
     {
         $properties = [];
         $required = [];

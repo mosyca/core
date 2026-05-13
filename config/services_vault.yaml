@@ -11,7 +11,7 @@ services:
     Mosyca\Core\Vault\Security\OperatorUserProvider:
         public: true
 
-    Mosyca\Core\Vault\Acl\PluginAccessChecker: ~
+    Mosyca\Core\Vault\Acl\ActionAccessChecker: ~
 
     # REST Controllers (autoconfigure adds the controller tag).
     Mosyca\Core\Vault\Controller\AuthController: ~

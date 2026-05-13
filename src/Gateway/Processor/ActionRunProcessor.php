@@ -6,15 +6,15 @@ namespace Mosyca\Core\Gateway\Processor;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use Mosyca\Core\Action\ActionRegistry;
+use Mosyca\Core\Action\ActionResult;
+use Mosyca\Core\Action\ScaffoldActionInterface;
 use Mosyca\Core\Context\ContextProvider;
 use Mosyca\Core\Depot\DepotInterface;
 use Mosyca\Core\Ledger\AccessLog;
-use Mosyca\Core\Ledger\PluginLog;
-use Mosyca\Core\Plugin\PluginRegistry;
-use Mosyca\Core\Plugin\PluginResult;
-use Mosyca\Core\Plugin\ScaffoldPluginInterface;
+use Mosyca\Core\Ledger\ActionLog;
 use Mosyca\Core\Renderer\OutputRendererInterface;
-use Mosyca\Core\Vault\Acl\PluginAccessChecker;
+use Mosyca\Core\Vault\Acl\ActionAccessChecker;
 use Mosyca\Core\Vault\Clearance\ClearanceRegistry;
 use Mosyca\Core\Vault\Entity\Operator;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -27,42 +27,42 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
 /**
  * API Platform state processor for POST /api/v1/{plugin_name}/{tenant}/{resource}/{action}/run.
  *
- * Executes the named plugin with the args from the request body and returns a
+ * Executes the named action with the args from the request body and returns a
  * JSON response rendered via OutputRenderer.
  *
  * Route variables (V0.9+):
- *   plugin_name  → first segment (was: connector)
- *   tenant       → tenant identifier (new — was absent)
- *   resource     → second segment
- *   action       → third segment
+ *   plugin_name  → first segment (the Plugin bundle name)
+ *   tenant       → tenant identifier
+ *   resource     → second segment of the action name
+ *   action       → third segment of the action name
  *
- * Internal plugin name: {plugin_name}:{resource}:{action}
+ * Internal action name: {plugin_name}:{resource}:{action}
  *
  * V0.8 additions:
  *   - Generates request_id (UUID v4) per call
  *   - Access Log: always written, fixed schema, no request-arg fields
  *   - Depot: write on depotEligible=true AND call.depot=true AND !isScaffold
  *   - Scaffold guard: always strips depot eligibility
- *   - Plugin Log: written when ledgerPayload != null AND operator logLevel allows
+ *   - Action Log: written when ledgerPayload != null AND operator logLevel allows
  *
  * V0.9 additions:
  *   - ExecutionContext built by ContextProvider from HTTP request + Symfony Security
- *   - $context passed to plugin->execute() as second argument
+ *   - $context passed to action->execute() as second argument
  *   - tenant_id added to AccessLog entry
  *
  * @implements ProcessorInterface<null, Response>
  */
-final class PluginRunProcessor implements ProcessorInterface
+final class ActionRunProcessor implements ProcessorInterface
 {
     public function __construct(
-        private readonly PluginRegistry $registry,
+        private readonly ActionRegistry $registry,
         private readonly OutputRendererInterface $renderer,
         private readonly AccessLog $accessLog,
-        private readonly PluginLog $pluginLog,
+        private readonly ActionLog $actionLog,
         private readonly ClearanceRegistry $clearanceRegistry,
         private readonly ContextProvider $contextProvider,
         private readonly ?TokenStorageInterface $tokenStorage = null,
-        private readonly ?PluginAccessChecker $accessChecker = null,
+        private readonly ?ActionAccessChecker $accessChecker = null,
         private readonly ?DepotInterface $depot = null,
     ) {
     }
@@ -81,19 +81,19 @@ final class PluginRunProcessor implements ProcessorInterface
 
         $errorCode = null;
         $httpStatus = Response::HTTP_OK;
-        /** @var PluginResult|null $result */
+        /** @var ActionResult|null $result */
         $result = null;
         $response = null;
 
         try {
             if (!$this->registry->has($internalName)) {
-                throw new NotFoundHttpException(\sprintf("Plugin '%s' not found.", $internalName));
+                throw new NotFoundHttpException(\sprintf("Action '%s' not found.", $internalName));
             }
 
-            $plugin = $this->registry->get($internalName);
+            $action = $this->registry->get($internalName);
 
             // V0.7: ACL check — null when Vault is not configured (dev / no-auth mode)
-            $this->accessChecker?->assertCanRun($plugin);
+            $this->accessChecker?->assertCanRun($action);
 
             // Read request body — API Platform passes `input: false`, so $data is null.
             $request = $context['request'] ?? null;
@@ -112,7 +112,7 @@ final class PluginRunProcessor implements ProcessorInterface
             } elseif ($request instanceof Request && \is_string($request->query->get('format'))) {
                 $format = $request->query->get('format');
             }
-            $format ??= $plugin->getDefaultFormat();
+            $format ??= $action->getDefaultFormat();
 
             // _template_inline = inline Twig; _template = named template path.
             $template = null;
@@ -135,7 +135,7 @@ final class PluginRunProcessor implements ProcessorInterface
 
                 if (null !== $cached) {
                     // Serve from depot — skip plugin execution
-                    $result = PluginResult::ok($cached['data'] ?? $cached, \is_string($cached['summary'] ?? null) ? $cached['summary'] : '');
+                    $result = ActionResult::ok($cached['data'] ?? $cached, \is_string($cached['summary'] ?? null) ? $cached['summary'] : '');
                     $rendered = $this->renderer->render($result, $format, $template);
                     $decoded = json_decode($rendered, true);
 
@@ -151,11 +151,11 @@ final class PluginRunProcessor implements ProcessorInterface
             // — V0.9: Build ExecutionContext from HTTP request + Symfony Security —
             $executionContext = $this->contextProvider->create();
 
-            // — Execute plugin (with context) —
-            $result = $plugin->execute($args, $executionContext);
+            // — Execute action (with context) —
+            $result = $action->execute($args, $executionContext);
 
             // — V0.8: Scaffold guard — permanently strip depot eligibility —
-            if ($plugin instanceof ScaffoldPluginInterface) {
+            if ($action instanceof ScaffoldActionInterface) {
                 $result = $result->withoutDepot();
             }
 
@@ -211,9 +211,9 @@ final class PluginRunProcessor implements ProcessorInterface
             );
         }
 
-        // — V0.8: Plugin Log — opt-in, written after response built —
+        // — V0.8: Action Log — opt-in, written after response built —
         if (null !== $result->ledgerPayload) {
-            $this->writePluginLog($requestId, $internalName, $result);
+            $this->writeActionLog($requestId, $internalName, $result);
         }
 
         return $response;
@@ -236,7 +236,7 @@ final class PluginRunProcessor implements ProcessorInterface
             'operator' => $operator?->getUsername() ?? 'anonymous',
             'clearance' => $operator?->getClearance() ?? 'none',
             'tenant_id' => $tenantId,
-            'plugin' => $pluginName,
+            'action' => $pluginName,
             'duration_ms' => $durationMs,
             'success' => $success,
             'error_code' => $errorCode,
@@ -244,7 +244,7 @@ final class PluginRunProcessor implements ProcessorInterface
         ]);
     }
 
-    private function writePluginLog(string $requestId, string $pluginName, PluginResult $result): void
+    private function writeActionLog(string $requestId, string $actionName, ActionResult $result): void
     {
         $operator = $this->currentOperator();
         $logLevel = 'info';
@@ -254,9 +254,9 @@ final class PluginRunProcessor implements ProcessorInterface
             $logLevel = null !== $clearance ? $clearance->logLevel : 'info';
         }
 
-        $this->pluginLog->write(
+        $this->actionLog->write(
             requestId: $requestId,
-            pluginName: $pluginName,
+            actionName: $actionName,
             entryLevel: $result->ledgerLevel,
             payload: $result->ledgerPayload ?? [],
             operatorLogLevel: $logLevel,

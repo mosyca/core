@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Mosyca\Core\Ledger;
 
 /**
- * Plugin Log — opt-in, per-plugin structured log stream.
+ * Action Log — opt-in, per-action structured log stream.
  *
- * A plugin writes to its own log by returning:
- *   PluginResult::ok($data)->withLedger(level: 'info', payload: [...])
+ * An action writes to its own log by returning:
+ *   ActionResult::ok($data)->withLedger(level: 'info', payload: [...])
  *
  * The operator's clearance controls the minimum level (logLevel: info/warning/off).
  * A log entry is written only when:
- *   1. result->ledgerPayload is not null (plugin called ->withLedger())
+ *   1. result->ledgerPayload is not null (action called ->withLedger())
  *   2. Operator's logLevel <= payload's level
  *
- * File: {logDir}/plugins/{plugin_name}.jsonl
+ * File: {logDir}/actions/{action_name}.jsonl
  *
  * Each entry carries the request_id from the Access Log for correlation.
  *
@@ -23,7 +23,7 @@ namespace Mosyca\Core\Ledger;
  *   debug < info < warning < error
  *   off = never write
  */
-class PluginLog
+class ActionLog
 {
     /** Level priority map — higher = more severe. */
     private const LEVELS = [
@@ -39,13 +39,13 @@ class PluginLog
     }
 
     /**
-     * Write a plugin log entry if the operator's logLevel permits it.
+     * Write an action log entry if the operator's logLevel permits it.
      *
-     * @param array<string, mixed> $payload Plugin-curated payload (no PII, no request args)
+     * @param array<string, mixed> $payload Action-curated payload (no PII, no request args)
      */
     public function write(
         string $requestId,
-        string $pluginName,
+        string $actionName,
         string $entryLevel,
         array $payload,
         string $operatorLogLevel,
@@ -57,7 +57,7 @@ class PluginLog
         $entry = [
             'ts' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
             'request_id' => $requestId,
-            'plugin' => $pluginName,
+            'action' => $actionName,
             'level' => $entryLevel,
             ...$payload,
         ];
@@ -67,7 +67,7 @@ class PluginLog
             return;
         }
 
-        $this->appendLine($pluginName, $line);
+        $this->appendLine($actionName, $line);
     }
 
     /**
@@ -81,12 +81,12 @@ class PluginLog
         return $entryPriority >= $minPriority;
     }
 
-    private function appendLine(string $pluginName, string $line): void
+    private function appendLine(string $actionName, string $line): void
     {
-        // Plugin name may contain colons (connector:resource:action) — safe to use as filename
+        // Action name may contain colons (plugin_name:resource:action) — safe to use as filename
         // after sanitizing. Replace colons with underscores for compatibility.
-        $filename = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $pluginName).'.jsonl';
-        $dir = $this->logDir.'/plugins';
+        $filename = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $actionName).'.jsonl';
+        $dir = $this->logDir.'/actions';
 
         $this->ensureDir($dir);
 

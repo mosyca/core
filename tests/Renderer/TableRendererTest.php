@@ -34,7 +34,7 @@ final class TableRendererTest extends RendererTestCase
 
     public function testRendersNullAsPlaceholder(): void
     {
-        $result = \Mosyca\Core\Plugin\PluginResult::ok(['value' => null], 'ok');
+        $result = \Mosyca\Core\Action\ActionResult::ok(['value' => null], 'ok');
         $output = $this->renderer->render($result);
 
         self::assertStringContainsString('—', $output);

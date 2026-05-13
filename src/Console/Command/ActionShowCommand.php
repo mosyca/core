@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Console\Command;
 
-use Mosyca\Core\Plugin\PluginRegistry;
-use Mosyca\Core\Plugin\TemplateAwarePluginInterface;
+use Mosyca\Core\Action\ActionRegistry;
+use Mosyca\Core\Action\TemplateAwareActionInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -13,31 +13,31 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-#[AsCommand(name: 'mosyca:plugin:show', description: 'Show full details of a registered Mosyca plugin')]
-final class PluginShowCommand extends Command
+#[AsCommand(name: 'mosyca:action:show', description: 'Show full details of a registered Mosyca action')]
+final class ActionShowCommand extends Command
 {
-    public function __construct(private readonly PluginRegistry $registry)
+    public function __construct(private readonly ActionRegistry $registry)
     {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this->addArgument('name', InputArgument::REQUIRED, 'Plugin name (e.g. core:system:ping)');
+        $this->addArgument('name', InputArgument::REQUIRED, 'Action name (e.g. core:system:ping)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $io = new SymfonyStyle($input, $output);
-        $pluginName = (string) $input->getArgument('name');
+        $actionName = (string) $input->getArgument('name');
 
-        if (!$this->registry->has($pluginName)) {
-            $io->error("Plugin '{$pluginName}' not found. Run <info>mosyca:plugin:list</info> to see all registered plugins.");
+        if (!$this->registry->has($actionName)) {
+            $io->error("Action '{$actionName}' not found. Run <info>mosyca:action:list</info> to see all registered actions.");
 
             return Command::FAILURE;
         }
 
-        $plugin = $this->registry->get($pluginName);
+        $plugin = $this->registry->get($actionName);
 
         $io->title($plugin->getName());
         $io->text($plugin->getDescription());
@@ -52,7 +52,7 @@ final class PluginShowCommand extends Command
             ['Scopes' => implode(', ', $plugin->getRequiredScopes()) ?: '(none)'],
         );
 
-        if ($plugin instanceof TemplateAwarePluginInterface) {
+        if ($plugin instanceof TemplateAwareActionInterface) {
             $templates = $plugin->getTemplates();
             if (!empty($templates)) {
                 $io->section('Named Templates');

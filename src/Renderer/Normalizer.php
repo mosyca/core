@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Renderer;
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 
 /**
- * Converts PluginResult into a plain array with HAL-style HATEOAS structure.
+ * Converts ActionResult into a plain array with HAL-style HATEOAS structure.
  *
  * Transforms raw link strings ['self' => '/api/...']
  * into HAL objects       ['self' => ['href' => '/api/...']].
@@ -17,7 +17,7 @@ final class Normalizer
     /**
      * @return array<string, mixed>
      */
-    public function normalize(PluginResult $result): array
+    public function normalize(ActionResult $result): array
     {
         $normalized = [
             'success' => $result->success,

@@ -6,41 +6,41 @@ namespace Mosyca\Core\Tests\Gateway;
 
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
-use Mosyca\Core\Gateway\Provider\PluginProvider;
-use Mosyca\Core\Gateway\Resource\PluginResource;
-use Mosyca\Core\Plugin\PluginInterface;
-use Mosyca\Core\Plugin\PluginRegistry;
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionInterface;
+use Mosyca\Core\Action\ActionRegistry;
+use Mosyca\Core\Action\ActionResult;
+use Mosyca\Core\Gateway\Provider\ActionProvider;
+use Mosyca\Core\Gateway\Resource\ActionResource;
 use PHPUnit\Framework\TestCase;
 
-final class PluginProviderTest extends TestCase
+final class ActionProviderTest extends TestCase
 {
-    private PluginRegistry $registry;
-    private PluginProvider $provider;
+    private ActionRegistry $registry;
+    private ActionProvider $provider;
 
     protected function setUp(): void
     {
-        $this->registry = new PluginRegistry();
-        $this->provider = new PluginProvider($this->registry);
+        $this->registry = new ActionRegistry();
+        $this->provider = new ActionProvider($this->registry);
     }
 
-    public function testCollectionReturnsAllPlugins(): void
+    public function testCollectionReturnsAllActions(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping', ['core']));
-        $this->registry->register($this->makePlugin('core:system:echo', ['core']));
+        $this->registry->register($this->makeAction('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('core:system:echo', ['core']));
 
         $result = $this->provider->provide(new GetCollection());
 
         self::assertIsArray($result);
         self::assertCount(2, $result);
-        self::assertInstanceOf(PluginResource::class, $result[0]);
-        self::assertInstanceOf(PluginResource::class, $result[1]);
+        self::assertInstanceOf(ActionResource::class, $result[0]);
+        self::assertInstanceOf(ActionResource::class, $result[1]);
     }
 
     public function testCollectionFiltersByTag(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping', ['core']));
-        $this->registry->register($this->makePlugin('shopware:order:list', ['ecommerce']));
+        $this->registry->register($this->makeAction('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('shopware:order:list', ['ecommerce']));
 
         $result = $this->provider->provide(new GetCollection(), context: ['filters' => ['tag' => 'ecommerce']]);
 
@@ -51,8 +51,8 @@ final class PluginProviderTest extends TestCase
 
     public function testCollectionFiltersByConnector(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping', ['core']));
-        $this->registry->register($this->makePlugin('shopware:order:list', ['ecommerce']));
+        $this->registry->register($this->makeAction('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('shopware:order:list', ['ecommerce']));
 
         $result = $this->provider->provide(new GetCollection(), context: ['filters' => ['connector' => 'shopware']]);
 
@@ -63,8 +63,8 @@ final class PluginProviderTest extends TestCase
 
     public function testCollectionFiltersByMutating(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping', [], mutating: false));
-        $this->registry->register($this->makePlugin('core:data:delete', [], mutating: true));
+        $this->registry->register($this->makeAction('core:system:ping', [], mutating: false));
+        $this->registry->register($this->makeAction('core:data:delete', [], mutating: true));
 
         $result = $this->provider->provide(new GetCollection(), context: ['filters' => ['mutating' => 'true']]);
 
@@ -73,23 +73,23 @@ final class PluginProviderTest extends TestCase
         self::assertSame('core:data:delete', $result[0]->name);
     }
 
-    public function testItemReturnsPluginResource(): void
+    public function testItemReturnsActionResource(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('core:system:ping', ['core']));
 
         $result = $this->provider->provide(
             new Get(),
             uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
         );
 
-        self::assertInstanceOf(PluginResource::class, $result);
+        self::assertInstanceOf(ActionResource::class, $result);
         self::assertSame('core:system:ping', $result->name);
         self::assertSame('core', $result->plugin_name);
         self::assertSame('system', $result->resource);
         self::assertSame('ping', $result->action);
     }
 
-    public function testItemReturnsNullForUnknownPlugin(): void
+    public function testItemReturnsNullForUnknownAction(): void
     {
         $result = $this->provider->provide(
             new Get(),
@@ -101,17 +101,17 @@ final class PluginProviderTest extends TestCase
 
     public function testItemIncludesFullDetails(): void
     {
-        $plugin = $this->makePlugin('core:system:ping', ['core'], parameters: [
+        $action = $this->makeAction('core:system:ping', ['core'], parameters: [
             'message' => ['type' => 'string', 'description' => 'A message', 'required' => false],
         ]);
-        $this->registry->register($plugin);
+        $this->registry->register($action);
 
         $result = $this->provider->provide(
             new Get(),
             uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
         );
 
-        self::assertInstanceOf(PluginResource::class, $result);
+        self::assertInstanceOf(ActionResource::class, $result);
         self::assertNotEmpty($result->usage);
         self::assertArrayHasKey('message', $result->parameters);
         self::assertNotEmpty($result->jsonSchema);
@@ -120,7 +120,7 @@ final class PluginProviderTest extends TestCase
 
     public function testCollectionItemsDoNotIncludeUsage(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('core:system:ping', ['core']));
 
         $results = $this->provider->provide(new GetCollection());
 
@@ -130,7 +130,7 @@ final class PluginProviderTest extends TestCase
 
     public function testCollectionPopulatesNameSegments(): void
     {
-        $this->registry->register($this->makePlugin('shopware:order:get-margin', ['ecommerce']));
+        $this->registry->register($this->makeAction('shopware:order:get-margin', ['ecommerce']));
 
         $results = $this->provider->provide(new GetCollection());
 
@@ -142,18 +142,18 @@ final class PluginProviderTest extends TestCase
 
     public function testJsonSchemaBuiltFromParameters(): void
     {
-        $plugin = $this->makePlugin('core:system:test', [], parameters: [
+        $action = $this->makeAction('core:system:test', [], parameters: [
             'limit' => ['type' => 'integer', 'description' => 'Page size', 'required' => true],
             'active' => ['type' => 'boolean', 'required' => false],
         ]);
-        $this->registry->register($plugin);
+        $this->registry->register($action);
 
         $result = $this->provider->provide(
             new Get(),
             uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'test'],
         );
 
-        self::assertInstanceOf(PluginResource::class, $result);
+        self::assertInstanceOf(ActionResource::class, $result);
         self::assertSame('integer', $result->jsonSchema['properties']['limit']['type']);
         self::assertSame('boolean', $result->jsonSchema['properties']['active']['type']);
         self::assertContains('limit', $result->jsonSchema['required']);
@@ -166,24 +166,24 @@ final class PluginProviderTest extends TestCase
      * @param string[]                            $tags
      * @param array<string, array<string, mixed>> $parameters
      */
-    private function makePlugin(
+    private function makeAction(
         string $name,
         array $tags = [],
         bool $mutating = false,
         array $parameters = [],
-    ): PluginInterface {
-        $plugin = $this->createMock(PluginInterface::class);
-        $plugin->method('getName')->willReturn($name);
-        $plugin->method('getDescription')->willReturn("Description of {$name}");
-        $plugin->method('getUsage')->willReturn("Usage of {$name}");
-        $plugin->method('getParameters')->willReturn($parameters);
-        $plugin->method('getRequiredScopes')->willReturn([]);
-        $plugin->method('getTags')->willReturn($tags);
-        $plugin->method('isMutating')->willReturn($mutating);
-        $plugin->method('getDefaultFormat')->willReturn('json');
-        $plugin->method('getDefaultTemplate')->willReturn(null);
-        $plugin->method('execute')->willReturn(PluginResult::ok([], 'ok'));
+    ): ActionInterface {
+        $action = $this->createMock(ActionInterface::class);
+        $action->method('getName')->willReturn($name);
+        $action->method('getDescription')->willReturn("Description of {$name}");
+        $action->method('getUsage')->willReturn("Usage of {$name}");
+        $action->method('getParameters')->willReturn($parameters);
+        $action->method('getRequiredScopes')->willReturn([]);
+        $action->method('getTags')->willReturn($tags);
+        $action->method('isMutating')->willReturn($mutating);
+        $action->method('getDefaultFormat')->willReturn('json');
+        $action->method('getDefaultTemplate')->willReturn(null);
+        $action->method('execute')->willReturn(ActionResult::ok([], 'ok'));
 
-        return $plugin;
+        return $action;
     }
 }

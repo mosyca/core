@@ -1,22 +1,22 @@
 # Mosyca Core
 
-> **One Plugin. Every Interface. Any API.**
+> **One Action. Every Interface. Any API.**
 
 [![Packagist Version](https://img.shields.io/packagist/v/mosyca/core)](https://packagist.org/packages/mosyca/core)
 [![PHP](https://img.shields.io/packagist/php-v/mosyca/core)](composer.json)
 [![License](https://img.shields.io/packagist/l/mosyca/core)](LICENSE)
 
-Mosyca Core is a PHP/Symfony framework where a single class — a **Plugin** — automatically becomes:
+Mosyca Core is a PHP/Symfony framework where a single class — an **Action** — automatically becomes:
 
 | Interface | How |
 |---|---|
 | 🖥️ CLI command | `bin/console shopware:order:get-margin --format=json` |
-| 🌐 REST endpoint | `POST /api/plugins/shopware/order/get-margin/run` |
+| 🌐 REST endpoint | `POST /api/v1/shopware/default/order/get-margin/run` |
 | 🤖 MCP tool | Claude calls it directly via Claude Desktop |
 | 📄 OpenAPI entry | Auto-generated, always in sync |
 | 🧩 PHP service | Injected anywhere via Symfony DI |
 
-Write the plugin once. Never write an adapter again.
+Write the action once. Never write an adapter again.
 
 ---
 
@@ -66,17 +66,18 @@ return [
 
 ## Quick Start
 
-### 1. Write a plugin
+### 1. Write an action
 
 ```php
 <?php
 
-namespace App\Plugin;
+namespace App\Action;
 
-use Mosyca\Core\Plugin\PluginInterface;
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionInterface;
+use Mosyca\Core\Action\ActionResult;
+use Mosyca\Core\Context\ExecutionContextInterface;
 
-final class OrderMarginPlugin implements PluginInterface
+final class OrderMarginAction implements ActionInterface
 {
     public function getName(): string        { return 'shopware:order:get-margin'; }
     public function getDescription(): string { return 'Calculates gross margin for an order.'; }
@@ -100,12 +101,12 @@ final class OrderMarginPlugin implements PluginInterface
         ];
     }
 
-    public function execute(array $args): PluginResult
+    public function execute(array $args, ExecutionContextInterface $context): ActionResult
     {
         // Your API call here.
         $margin = 42.5;
 
-        return PluginResult::ok(
+        return ActionResult::ok(
             ['order_id' => $args['order_id'], 'margin_percent' => $margin],
             "Margin for order {$args['order_id']}: {$margin}%",
         );
@@ -118,10 +119,10 @@ final class OrderMarginPlugin implements PluginInterface
 ```yaml
 # config/services.yaml
 services:
-    App\Plugin\OrderMarginPlugin: ~
+    App\Action\OrderMarginAction: ~
 ```
 
-That's it. The plugin is auto-tagged and registered via `MosycaCoreBundle`.
+That's it. The action is auto-tagged and registered via `MosycaCoreBundle`.
 
 ### 3. Use it — everywhere at once
 
@@ -134,7 +135,7 @@ bin/console help shopware:order:get-margin  # shows getUsage() + all parameters
 
 **REST:**
 ```bash
-curl -X POST https://yourapp.com/api/plugins/shopware/order/get-margin/run \
+curl -X POST https://yourapp.com/api/v1/shopware/default/order/get-margin/run \
      -H "Content-Type: application/json" \
      -d '{"args": {"order_id": "018e-1234"}, "_format": "json"}'
 ```
@@ -146,17 +147,17 @@ Claude calls: shopware_order_get_margin({"order_id": "018e-1234"})
 Claude responds: "The margin is 42.5%."
 ```
 
-**Plugin list:**
+**Action list:**
 ```bash
-bin/console mosyca:plugin:list
-bin/console mosyca:plugin:show shopware:order:get-margin
+bin/console mosyca:action:list
+bin/console mosyca:action:show shopware:order:get-margin
 ```
 
 ---
 
 ## Output Formats
 
-Every plugin supports six output formats — switch with `--format` or `?format=`:
+Every action supports six output formats — switch with `--format` or `?format=`:
 
 | Format | Description |
 |--------|-------------|
@@ -175,26 +176,26 @@ bin/console core:system:ping --format=text --template-inline="Pong: {{ data.pong
 
 ---
 
-## PluginResult
+## ActionResult
 
 ```php
 // Success
-return PluginResult::ok($data, 'Human-readable summary');
+return ActionResult::ok($data, 'Human-readable summary');
 
 // With HAL links and embedded resources
-return PluginResult::ok($data, 'Done')
+return ActionResult::ok($data, 'Done')
     ->withLinks(['self' => '/api/orders/123'])
     ->withEmbedded(['customer' => $customerData]);
 
 // Error (never throw for business errors)
-return PluginResult::error('Order not found', ['order_id' => $id]);
+return ActionResult::failure('Order not found', 'ERROR_NOT_FOUND', 'Provide a valid order_id.');
 ```
 
 ---
 
-## Built-in Plugins
+## Built-in Actions
 
-| Plugin | Command | Description |
+| Action | Command | Description |
 |--------|---------|-------------|
 | `core:system:ping` | `bin/console core:system:ping` | Health check — returns pong |
 | `core:system:echo` | `bin/console core:system:echo --message=hello` | Echoes all input parameters |
@@ -203,15 +204,15 @@ return PluginResult::error('Order not found', ['order_id' => $id]);
 
 ## REST API (via API Platform)
 
-When `api-platform/core` is installed, every plugin gets REST endpoints automatically:
+When `api-platform/core` is installed, every action gets REST endpoints automatically:
 
 ```
-GET  /api/plugins                                        → list all plugins
-GET  /api/plugins/{connector}/{resource}/{action}        → plugin detail + JSON Schema
-POST /api/plugins/{connector}/{resource}/{action}/run    → execute plugin
-GET  /api/mcp/tools                                      → MCP list_tools format
-GET  /api/docs                                           → Swagger UI
-GET  /api/docs.json                                      → OpenAPI 3.0 spec
+GET  /api/v1/plugins                                              → list all actions
+GET  /api/v1/{plugin}/{tenant}/{resource}/{action}               → action detail + JSON Schema
+POST /api/v1/{plugin}/{tenant}/{resource}/{action}/run           → execute action
+GET  /api/mcp/tools                                              → MCP list_tools format
+GET  /api/docs                                                   → Swagger UI
+GET  /api/docs.json                                              → OpenAPI 3.0 spec
 ```
 
 ---
@@ -238,10 +239,10 @@ vendor/bin/php-cs-fixer fix
 ## Architecture
 
 ```
-PluginInterface          ← implement this once
+ActionInterface          ← implement this once
        │
        ├── MosycaCoreBundle    (Symfony Bundle + auto-discovery)
-       ├── ConsoleAdapter      (bin/console command per plugin)
+       ├── ConsoleAdapter      (bin/console command per action)
        ├── Gateway             (REST endpoint + OpenAPI via API Platform)
        ├── OutputRenderer      (json / yaml / table / text / raw / mcp)
        └── Bridge (V0.6)       (MCP server → Claude Desktop)

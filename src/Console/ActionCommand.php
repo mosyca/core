@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Console;
 
+use Mosyca\Core\Action\ActionInterface;
 use Mosyca\Core\Context\ContextProvider;
-use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Renderer\OutputRendererInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -14,14 +14,14 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
 /**
- * Wraps a PluginInterface as a Symfony Console Command.
+ * Wraps an ActionInterface as a Symfony Console Command.
  *
  * Generated dynamically by ConsoleAdapter — never instantiated directly.
  */
-final class PluginCommand extends Command
+final class ActionCommand extends Command
 {
     public function __construct(
-        private readonly PluginInterface $plugin,
+        private readonly ActionInterface $plugin,
         private readonly OutputRendererInterface $renderer,
         private readonly ContextProvider $contextProvider,
     ) {
@@ -50,7 +50,7 @@ final class PluginCommand extends Command
 
         $this
             ->addOption('format', null, InputOption::VALUE_REQUIRED, 'Output format: json|yaml|raw|table|text|mcp', $this->plugin->getDefaultFormat())
-            ->addOption('template', null, InputOption::VALUE_OPTIONAL, 'Named Twig template (use mosyca:plugin:show to list available names)')
+            ->addOption('template', null, InputOption::VALUE_OPTIONAL, 'Named Twig template (use mosyca:action:show to list available names)')
             ->addOption('template-inline', null, InputOption::VALUE_OPTIONAL, 'Inline Twig template string (only used with --format=text)')
             ->addOption('no-confirm', null, InputOption::VALUE_NONE, 'Skip confirmation prompt for mutating plugins');
     }

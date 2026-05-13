@@ -2,38 +2,69 @@
 
 PHP library. Namespace `Mosyca\Core\`. Symfony 7.1+ bundle.
 
-## Current Structure (V0.5)
+---
+
+## Nomenclature Rules (ENFORCED)
+
+### Plugin vs Action — never confuse these
+
+| Term | Definition |
+|---|---|
+| **Plugin** | A Mosyca Composer package (e.g. `mosyca/connector-shopware6`). A bundle of Actions. |
+| **Action** | The single executable unit. Implements `ActionInterface`. Registered via `#[AsAction]`. |
+| **ActionResult** | The response envelope returned by `execute()`. |
+
+**Examples of correct usage:**
+- "The Shopware plugin provides the `shopware:order:get-margin` action."
+- "Register your action with `#[AsAction]`."
+- "Actions must implement `ActionInterface::execute()`."
+
+**Examples of WRONG usage (never write these):**
+- ~~`PluginInterface`~~ → write `ActionInterface`
+- ~~`PluginResult`~~ → write `ActionResult`
+- ~~`#[AsPlugin]`~~ → write `#[AsAction]`
+- ~~"The ping plugin"~~ → write "the ping action"
+
+---
+
+## Current Structure (V0.10)
 
 ```
 src/
   MosycaCoreBundle.php
   MosycaCore.php
 
-  Plugin/
-    PluginInterface.php       ← The core contract (10 methods)
-    PluginResult.php          ← Unified output (ok/error, withLinks, withEmbedded)
-    PluginRegistry.php        ← Tagged service registry + filter()
+  Action/
+    ActionInterface.php           ← The core contract (10 methods)
+    ActionResult.php              ← Unified output (ok/failure, withLinks, withEmbedded, withDepot, withLedger)
+    ActionTrait.php               ← Default implementations for common methods
+    ActionRegistry.php            ← Tagged service registry
+    TemplateAwareActionInterface.php
+    ScaffoldActionInterface.php   ← Marker — permanently excluded from Depot
     Attribute/
-      AsPlugin.php            ← PHP 8 attribute (used by bundle auto-discovery)
+      AsAction.php                ← PHP 8 attribute (used by bundle auto-discovery)
+    Builtin/
+      PingAction.php              ← core:system:ping
+      EchoAction.php              ← core:system:echo
 
   DependencyInjection/
     MosycaCoreExtension.php
     Compiler/
-      PluginRegistrationPass.php   ← collects services tagged mosyca.plugin
-      PluginCommandLoaderPass.php  ← wraps builtin loader in PluginChainCommandLoader
+      ActionRegistrationPass.php    ← collects services tagged mosyca.action
+      ActionCommandLoaderPass.php   ← wraps builtin loader in ActionChainCommandLoader
 
   Console/
-    ConsoleAdapter.php             ← CommandLoaderInterface → one command per plugin
-    PluginCommand.php              ← wraps PluginInterface as Symfony Command
-    PluginChainCommandLoader.php   ← chains builtin + ConsoleAdapter
+    ConsoleAdapter.php              ← CommandLoaderInterface → one command per action
+    ActionCommand.php               ← wraps ActionInterface as Symfony Command
+    ActionChainCommandLoader.php    ← chains builtin + ConsoleAdapter
     Command/
-      PluginListCommand.php        ← mosyca:plugin:list [--tag=]
-      PluginShowCommand.php        ← mosyca:plugin:show <name>
+      ActionListCommand.php         ← mosyca:action:list [--tag=]
+      ActionShowCommand.php         ← mosyca:action:show <name>
 
   Renderer/
     OutputRendererInterface.php
-    OutputRenderer.php             ← dispatches by format string
-    Normalizer.php                 ← PluginResult → array + HATEOAS
+    OutputRenderer.php              ← dispatches by format string
+    Normalizer.php                  ← ActionResult → array + HATEOAS
     JsonRenderer.php
     YamlRenderer.php
     RawRenderer.php
@@ -43,37 +74,80 @@ src/
 
   Gateway/
     Resource/
-      PluginResource.php           ← #[ApiResource] GET /api/plugins[/{name}]
-      McpToolResource.php          ← #[ApiResource] GET /api/mcp/tools
+      ActionResource.php            ← #[ApiResource] GET/POST /api/v1/{plugin_name}/{tenant}/{resource}/{action}
+      McpToolResource.php           ← #[ApiResource] GET /api/mcp/tools
     Provider/
-      PluginProvider.php           ← collection (filtered) + item (full schema)
-      McpToolProvider.php          ← MCP list_tools format
+      ActionProvider.php            ← collection (filtered) + item (full schema)
+      McpToolProvider.php           ← MCP list_tools format
     Processor/
-      PluginRunProcessor.php       ← POST /api/plugins/{name}/run
+      ActionRunProcessor.php        ← POST /api/v1/.../run → JsonResponse
+
+  Context/
+    ExecutionContextInterface.php
+    ExecutionContext.php
+    ContextProvider.php             ← builds context from HTTP or CLI
+
+  Ledger/
+    AccessLog.php                   ← every request logged to access.jsonl
+    ActionLog.php                   ← optional structured ledger per action
+
+  Depot/
+    DepotInterface.php              ← TTL-aware key/value cache (double opt-in)
+
+  Vault/
+    Acl/
+      ActionAccessChecker.php       ← assertCanRun(ActionInterface $action)
+    Clearance/
+      ClearanceInterface.php
+      ClearanceRegistry.php
+      AbstractClearance.php
+      Builtin/
+        (built-in clearance levels)
+    Entity/
+      Operator.php
+      McpToken.php
+    Security/
+      OperatorUserProvider.php
+    Controller/
+      AuthController.php
+      VaultController.php
+    Console/
+      CreateOperatorCommand.php
+      GenerateMcpTokenCommand.php
+      ListOperatorsCommand.php
+      SetClearanceCommand.php
 
 config/
   services.yaml
+  services_vault.yaml
 
 examples/
-  PingPlugin.php              ← Reference implementation (core:system:ping)
-  EchoPlugin.php              ← Echoes all input parameters (core:system:echo)
   run.php                     ← php examples/run.php → prints ✅ pong
+  render.php                  ← demonstrates all OutputRenderer formats
 
 tests/
-  Plugin/
-    PluginInterfaceTest.php
-    PluginResultTest.php
+  Action/
+    ActionInterfaceTest.php
+    ActionResultTest.php
   Renderer/
     (snapshot tests per renderer)
   Console/
     ConsoleAdapterTest.php
-    PluginCommandTest.php
-    PluginListCommandTest.php
     ConsoleAdapterFunctionalTest.php
+    ActionCommandTest.php
+    ActionListCommandTest.php
+  Context/
+    ExecutionContextTest.php
+    ContextProviderTest.php
   Gateway/
-    PluginProviderTest.php
-    PluginRunProcessorTest.php
+    ActionProviderTest.php
+    ActionRunProcessorTest.php
+  Functional/
+    TestKernel.php
+    AutoDiscoveryTest.php
 ```
+
+---
 
 ## Quality Commands
 
@@ -93,16 +167,20 @@ vendor/bin/phpunit && vendor/bin/phpstan analyse --no-progress && vendor/bin/php
 php examples/run.php
 ```
 
+---
+
 ## Conventions
 
-**Plugin naming:** `{connector}:{resource}:{action}` — all lowercase, hyphens allowed.
+**Action naming:** `{plugin}:{resource}:{action}` — all lowercase, hyphens allowed.
 Example: `shopware:order:get-margin`, `core:system:ping`
 
-**PluginResult:** Always return `PluginResult::ok()` or `PluginResult::error()`.
-Never throw exceptions for business errors.
+**ActionResult:** Always return `ActionResult::ok()` or `ActionResult::failure()`.
+Never throw exceptions for business errors. `ActionResult::error()` is deprecated.
 
-**New plugins go in:** `src/Plugin/` (framework) or `examples/` (demos).
-Connector plugins live in `connector-*/src/Plugin/`.
+**New actions go in:** `src/Action/Builtin/` (framework builtins) or `examples/` (demos).
+Connector actions live in `connector-*/src/Action/`.
+
+**DI tag:** `mosyca.action` (do NOT use the old `mosyca.plugin` tag).
 
 **PHPStan level 8:** No `mixed` leaking without explicit handling.
 Use `@param array<string, mixed>` not bare `array`.
@@ -115,31 +193,28 @@ api_platform:
     - '%kernel.project_dir%/vendor/mosyca/core/src/Gateway/Resource'
 ```
 
+---
+
 ## Completed Slices
 
 ```
-V0.1  PluginInterface, PluginResult, PluginRegistry, examples, tooling
-V0.2  MosycaCoreBundle, DI extension, PluginRegistrationPass, auto-discovery
+V0.1  ActionInterface, ActionResult, ActionRegistry, examples, tooling
+V0.2  MosycaCoreBundle, DI extension, ActionRegistrationPass, auto-discovery
 V0.3  OutputRenderer pipeline (6 formats: json/yaml/raw/table/text/mcp)
-V0.4  ConsoleAdapter, PluginCommand, PluginChainCommandLoader,
-      PluginCommandLoaderPass, PluginListCommand, PluginShowCommand
-V0.5  REST Gateway via API Platform 3.4: PluginResource, McpToolResource,
-      PluginProvider (collection + item + JSON Schema), McpToolProvider,
-      PluginRunProcessor (POST /run → JsonResponse)
+V0.4  ConsoleAdapter, ActionCommand, ActionChainCommandLoader,
+      ActionCommandLoaderPass, ActionListCommand, ActionShowCommand
+V0.5  REST Gateway via API Platform 3.4: ActionResource, McpToolResource,
+      ActionProvider (collection + item + JSON Schema), McpToolProvider,
+      ActionRunProcessor (POST /run → JsonResponse)
+V0.6  @mosyca/bridge (Node.js MCP server, stdio transport)
+V0.7  Vault: Operator entity, GBAC clearances, ActionAccessChecker, REST auth
+V0.8  Depot (TTL cache), ActionLog (structured ledger), ScaffoldActionInterface
+V0.9  ACL architecture: ExecutionContextInterface, ContextProvider,
+      ActionResult::failure(), new route /api/v1/{plugin_name}/{tenant}/{resource}/{action}
+V0.10 Nomenclature correction: Plugin→Action rename (pure rename, no behaviour change)
 ```
 
-## What V0.6 Adds (next slice — separate repo: bridge/)
-
-```
-@mosyca/bridge (npm)
-  server.mjs (stdio transport)
-  MosycaClient (fetch wrapper to Gateway)
-  list_tools and call_tool MCP handlers
-  Published to npmjs.com as @mosyca/bridge@0.1.0
-
-Documentation (ships with V0.6)
-  docs/30_getting_started.md
-```
+---
 
 ## Commit Convention
 

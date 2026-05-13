@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\DependencyInjection;
 
+use Mosyca\Core\Action\ActionInterface;
 use Mosyca\Core\Depot\DepotInterface;
 use Mosyca\Core\Depot\FilesystemDepot;
-use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Vault\Clearance\ClearanceRegistry;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -32,10 +32,10 @@ final class MosycaCoreExtension extends Extension implements PrependExtensionInt
         }
 
         // Global auto-tagging: any service (in any bundle or application namespace)
-        // that implements PluginInterface gets the mosyca.plugin tag automatically.
+        // that implements ActionInterface gets the mosyca.action tag automatically.
         // This works across YAML files — unlike _instanceof which is file-scoped.
-        $container->registerForAutoconfiguration(PluginInterface::class)
-            ->addTag('mosyca.plugin');
+        $container->registerForAutoconfiguration(ActionInterface::class)
+            ->addTag('mosyca.action');
 
         // ClearanceRegistry — optional custom YAML path from project config/mosyca/clearances.yaml
         $projectDir = $container->getParameter('kernel.project_dir');

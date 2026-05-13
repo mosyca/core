@@ -4,61 +4,61 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Tests\Console;
 
+use Mosyca\Core\Action\ActionInterface;
+use Mosyca\Core\Action\ActionRegistry;
+use Mosyca\Core\Action\ActionResult;
+use Mosyca\Core\Console\ActionCommand;
 use Mosyca\Core\Console\ConsoleAdapter;
-use Mosyca\Core\Console\PluginCommand;
 use Mosyca\Core\Context\ContextProvider;
-use Mosyca\Core\Plugin\PluginInterface;
-use Mosyca\Core\Plugin\PluginRegistry;
-use Mosyca\Core\Plugin\PluginResult;
 use Mosyca\Core\Renderer\OutputRendererInterface;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Exception\CommandNotFoundException;
 
 final class ConsoleAdapterTest extends TestCase
 {
-    private PluginRegistry $registry;
+    private ActionRegistry $registry;
     private ConsoleAdapter $adapter;
 
     protected function setUp(): void
     {
-        $this->registry = new PluginRegistry();
+        $this->registry = new ActionRegistry();
         $renderer = $this->createMock(OutputRendererInterface::class);
         $contextProvider = $this->createMock(ContextProvider::class);
         $this->adapter = new ConsoleAdapter($this->registry, $renderer, $contextProvider);
     }
 
-    public function testGetNamesReturnsRegisteredPluginNames(): void
+    public function testGetNamesReturnsRegisteredActionNames(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping'));
-        $this->registry->register($this->makePlugin('core:system:echo'));
+        $this->registry->register($this->makeAction('core:system:ping'));
+        $this->registry->register($this->makeAction('core:system:echo'));
 
         self::assertSame(['core:system:ping', 'core:system:echo'], $this->adapter->getNames());
     }
 
-    public function testGetNamesIsEmptyWithNoPlugins(): void
+    public function testGetNamesIsEmptyWithNoActions(): void
     {
         self::assertSame([], $this->adapter->getNames());
     }
 
-    public function testHasReturnsTrueForRegisteredPlugin(): void
+    public function testHasReturnsTrueForRegisteredAction(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping'));
+        $this->registry->register($this->makeAction('core:system:ping'));
 
         self::assertTrue($this->adapter->has('core:system:ping'));
     }
 
-    public function testHasReturnsFalseForUnknownPlugin(): void
+    public function testHasReturnsFalseForUnknownAction(): void
     {
         self::assertFalse($this->adapter->has('does:not:exist'));
     }
 
-    public function testGetReturnsPluginCommand(): void
+    public function testGetReturnsActionCommand(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping'));
+        $this->registry->register($this->makeAction('core:system:ping'));
 
         $command = $this->adapter->get('core:system:ping');
 
-        self::assertInstanceOf(PluginCommand::class, $command);
+        self::assertInstanceOf(ActionCommand::class, $command);
         self::assertSame('core:system:ping', $command->getName());
     }
 
@@ -69,29 +69,29 @@ final class ConsoleAdapterTest extends TestCase
         $this->adapter->get('does:not:exist');
     }
 
-    public function testBuildCommandWrapsPlugin(): void
+    public function testBuildCommandWrapsAction(): void
     {
-        $plugin = $this->makePlugin('shopware:order:list');
-        $command = $this->adapter->buildCommand($plugin);
+        $action = $this->makeAction('shopware:order:list');
+        $command = $this->adapter->buildCommand($action);
 
-        self::assertInstanceOf(PluginCommand::class, $command);
+        self::assertInstanceOf(ActionCommand::class, $command);
         self::assertSame('shopware:order:list', $command->getName());
     }
 
-    private function makePlugin(string $name): PluginInterface
+    private function makeAction(string $name): ActionInterface
     {
-        $plugin = $this->createMock(PluginInterface::class);
-        $plugin->method('getName')->willReturn($name);
-        $plugin->method('getDescription')->willReturn('Test plugin');
-        $plugin->method('getUsage')->willReturn('Test usage');
-        $plugin->method('getParameters')->willReturn([]);
-        $plugin->method('getRequiredScopes')->willReturn([]);
-        $plugin->method('getTags')->willReturn([]);
-        $plugin->method('isMutating')->willReturn(false);
-        $plugin->method('getDefaultFormat')->willReturn('json');
-        $plugin->method('getDefaultTemplate')->willReturn(null);
-        $plugin->method('execute')->willReturn(PluginResult::ok([], 'ok'));
+        $action = $this->createMock(ActionInterface::class);
+        $action->method('getName')->willReturn($name);
+        $action->method('getDescription')->willReturn('Test action');
+        $action->method('getUsage')->willReturn('Test usage');
+        $action->method('getParameters')->willReturn([]);
+        $action->method('getRequiredScopes')->willReturn([]);
+        $action->method('getTags')->willReturn([]);
+        $action->method('isMutating')->willReturn(false);
+        $action->method('getDefaultFormat')->willReturn('json');
+        $action->method('getDefaultTemplate')->willReturn(null);
+        $action->method('execute')->willReturn(ActionResult::ok([], 'ok'));
 
-        return $plugin;
+        return $action;
     }
 }

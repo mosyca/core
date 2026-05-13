@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Tests\Functional;
 
+use Mosyca\Core\Action\Builtin\EchoAction;
+use Mosyca\Core\Action\Builtin\PingAction;
 use Mosyca\Core\MosycaCoreBundle;
-use Mosyca\Core\Plugin\Builtin\EchoPlugin;
-use Mosyca\Core\Plugin\Builtin\PingPlugin;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
 use Symfony\Bundle\FrameworkBundle\Kernel\MicroKernelTrait;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -34,10 +34,10 @@ final class TestKernel extends Kernel
         ]);
 
         // Simulate what an application's services.yaml would do:
-        // register plugin classes as services so _instanceof can tag them.
+        // register action classes as services so _instanceof can tag them.
         $container->services()
-            ->set(PingPlugin::class)->autoconfigure()->autowire()
-            ->set(EchoPlugin::class)->autoconfigure()->autowire();
+            ->set(PingAction::class)->autoconfigure()->autowire()
+            ->set(EchoAction::class)->autoconfigure()->autowire();
     }
 
     public function getProjectDir(): string

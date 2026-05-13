@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Mosyca\Core\Plugin;
+namespace Mosyca\Core\Action;
 
 /**
- * Unified output object for all Mosyca plugins.
+ * Unified output object for all Mosyca actions.
  *
  * The Renderer converts this into the requested output format:
  * json, yaml, raw, table, text (twig), mcp.
@@ -13,7 +13,7 @@ namespace Mosyca\Core\Plugin;
  * V0.8: Carries Depot and Ledger metadata decided by the plugin inside run().
  * Both systems are opt-in — defaults are off.
  */
-final class PluginResult
+final class ActionResult
 {
     private function __construct(
         public readonly bool $success,
@@ -31,7 +31,7 @@ final class PluginResult
         /** Depot TTL in seconds. Only relevant when depotEligible = true. */
         public readonly int $depotTtl = 3600,
         // — V0.8 Ledger — //
-        /** @var array<string, mixed>|null Ledger payload for the Plugin Log. null = no plugin log entry. */
+        /** @var array<string, mixed>|null Ledger payload for the Action Log. null = no action log entry. */
         public readonly ?array $ledgerPayload = null,
         /** Ledger level for this payload. Only relevant when ledgerPayload != null. */
         public readonly string $ledgerLevel = 'info',
@@ -80,7 +80,7 @@ final class PluginResult
      * Domain ACL vector pattern:
      * <code>
      *     if (!$context->isAclBypassed() && !$this->validatePin($args['pin'] ?? null)) {
-     *         return PluginResult::failure(
+     *         return ActionResult::failure(
      *             'Access denied. Domain authentication failed.',
      *             'ERROR_ACL_DENIED',
      *             'Provide the correct security_pin in the payload.',
@@ -108,7 +108,7 @@ final class PluginResult
     /**
      * Legacy error result.
      *
-     * @deprecated Use PluginResult::failure() with errorCode and correctionHint.
+     * @deprecated Use ActionResult::failure() with errorCode and correctionHint.
      *             failure() enables LLM-deterministic error handling and is required
      *             for ACL denials and domain errors.
      *
@@ -119,7 +119,7 @@ final class PluginResult
         return self::failure(
             message: $message,
             errorCode: 'ERROR_LEGACY',
-            correctionHint: 'Use PluginResult::failure() with errorCode and correctionHint.',
+            correctionHint: 'Use ActionResult::failure() with errorCode and correctionHint.',
             context: $context,
         );
     }
@@ -128,7 +128,7 @@ final class PluginResult
      * Mark this result as depot-eligible with a TTL.
      *
      * The caller still has to actively request depot caching per call (double opt-in).
-     * Scaffold plugins: PluginRunProcessor strips eligibility regardless of this flag.
+     * Scaffold actions: ActionRunProcessor strips eligibility regardless of this flag.
      */
     public function withDepot(int $ttl = 3600): self
     {
@@ -151,7 +151,7 @@ final class PluginResult
     /**
      * Strip depot eligibility.
      *
-     * Called by PluginRunProcessor for scaffold plugins — cannot be overridden.
+     * Called by ActionRunProcessor for scaffold actions — cannot be overridden.
      */
     public function withoutDepot(): self
     {
@@ -172,9 +172,9 @@ final class PluginResult
     }
 
     /**
-     * Attach a plugin log payload.
+     * Attach an action log payload.
      *
-     * The plugin is responsible for stripping PII before calling this.
+     * The action is responsible for stripping PII before calling this.
      * No request parameters may be passed here directly.
      *
      * @param array<string, mixed> $payload

@@ -2,42 +2,42 @@
 
 declare(strict_types=1);
 
-namespace Mosyca\Core\Plugin;
+namespace Mosyca\Core\Action;
 
 /**
- * Default implementations for the optional parts of PluginInterface.
+ * Default implementations for the optional parts of ActionInterface.
  *
- * Plugin authors who use this trait are automatically safe when the framework
+ * Action authors who use this trait are automatically safe when the framework
  * adds new optional methods with defaults in future minor releases.
  *
- * Required methods that MUST be implemented per plugin (no default possible):
+ * Required methods that MUST be implemented per action (no default possible):
  *   getName(), getDescription(), getUsage(), getParameters(), isMutating(), execute()
  *
  * Usage:
- *   final class MyPlugin implements PluginInterface
+ *   final class MyAction implements ActionInterface
  *   {
- *       use PluginTrait;
+ *       use ActionTrait;
  *       // only implement the required methods above
  *   }
  *
- * With TemplateAwarePluginInterface:
- *   final class MyPlugin implements TemplateAwarePluginInterface
+ * With TemplateAwareActionInterface:
+ *   final class MyAction implements TemplateAwareActionInterface
  *   {
- *       use PluginTrait;
+ *       use ActionTrait;
  *       // override getTemplates() to return your named templates
  *   }
  *
  * Stability contract:
- *   - PluginInterface: FROZEN after V1.0 — no new required methods ever.
- *   - New optional capabilities → new capability interface (e.g. TemplateAwarePluginInterface).
- *   - PluginTrait: provides defaults for all capability interfaces shipped with core.
+ *   - ActionInterface: FROZEN after V1.0 — no new required methods ever.
+ *   - New optional capabilities → new capability interface (e.g. TemplateAwareActionInterface).
+ *   - ActionTrait: provides defaults for all capability interfaces shipped with core.
  *     Using this trait protects you from breaking changes on minor upgrades.
  */
-trait PluginTrait
+trait ActionTrait
 {
     /**
      * Required OAuth scopes / API permissions.
-     * Default: none (most plugins need no OAuth scope check).
+     * Default: none (most actions need no OAuth scope check).
      *
      * @return string[]
      */
@@ -76,10 +76,10 @@ trait PluginTrait
     }
 
     /**
-     * Named Twig templates declared by this plugin.
+     * Named Twig templates declared by this action.
      * Default: none.
      *
-     * Override this when implementing TemplateAwarePluginInterface.
+     * Override this when implementing TemplateAwareActionInterface.
      *
      * @return array<string, string> ['label' => 'path/to/template']
      */

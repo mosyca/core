@@ -43,7 +43,7 @@ final class NormalizerTest extends RendererTestCase
 
     public function testOmitsEmptyLinksAndEmbedded(): void
     {
-        $result = \Mosyca\Core\Plugin\PluginResult::ok(['x' => 1], 'ok');
+        $result = \Mosyca\Core\Action\ActionResult::ok(['x' => 1], 'ok');
         $normalized = $this->normalizer->normalize($result);
 
         self::assertArrayNotHasKey('_links', $normalized);

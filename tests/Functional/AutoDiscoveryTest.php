@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Tests\Functional;
 
+use Mosyca\Core\Action\ActionRegistry;
 use Mosyca\Core\Context\ExecutionContextInterface;
-use Mosyca\Core\Plugin\PluginRegistry;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 final class AutoDiscoveryTest extends KernelTestCase
@@ -15,12 +15,12 @@ final class AutoDiscoveryTest extends KernelTestCase
         return TestKernel::class;
     }
 
-    public function testPluginsAreAutoDiscovered(): void
+    public function testActionsAreAutoDiscovered(): void
     {
         self::bootKernel();
 
-        /** @var PluginRegistry $registry */
-        $registry = self::getContainer()->get(PluginRegistry::class);
+        /** @var ActionRegistry $registry */
+        $registry = self::getContainer()->get(ActionRegistry::class);
 
         self::assertCount(2, $registry->all());
         self::assertTrue($registry->has('core:system:ping'));
@@ -33,12 +33,12 @@ final class AutoDiscoveryTest extends KernelTestCase
         restore_exception_handler();
     }
 
-    public function testDiscoveredPluginsAreExecutable(): void
+    public function testDiscoveredActionsAreExecutable(): void
     {
         self::bootKernel();
 
-        /** @var PluginRegistry $registry */
-        $registry = self::getContainer()->get(PluginRegistry::class);
+        /** @var ActionRegistry $registry */
+        $registry = self::getContainer()->get(ActionRegistry::class);
 
         $context = $this->createMock(ExecutionContextInterface::class);
         $context->method('isAclBypassed')->willReturn(false);

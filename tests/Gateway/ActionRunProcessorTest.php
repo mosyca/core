@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Mosyca\Core\Tests\Gateway;
 
 use ApiPlatform\Metadata\Post;
+use Mosyca\Core\Action\ActionInterface;
+use Mosyca\Core\Action\ActionRegistry;
+use Mosyca\Core\Action\ActionResult;
+use Mosyca\Core\Action\ScaffoldActionInterface;
 use Mosyca\Core\Context\ContextProvider;
 use Mosyca\Core\Context\ExecutionContextInterface;
-use Mosyca\Core\Gateway\Processor\PluginRunProcessor;
+use Mosyca\Core\Gateway\Processor\ActionRunProcessor;
 use Mosyca\Core\Ledger\AccessLog;
-use Mosyca\Core\Ledger\PluginLog;
-use Mosyca\Core\Plugin\PluginInterface;
-use Mosyca\Core\Plugin\PluginRegistry;
-use Mosyca\Core\Plugin\PluginResult;
-use Mosyca\Core\Plugin\ScaffoldPluginInterface;
+use Mosyca\Core\Ledger\ActionLog;
 use Mosyca\Core\Renderer\OutputRendererInterface;
 use Mosyca\Core\Vault\Clearance\ClearanceRegistry;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -24,15 +24,15 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
-final class PluginRunProcessorTest extends TestCase
+final class ActionRunProcessorTest extends TestCase
 {
-    private PluginRegistry $registry;
+    private ActionRegistry $registry;
     /** @var OutputRendererInterface&MockObject */
     private OutputRendererInterface $renderer;
     /** @var AccessLog&MockObject */
     private AccessLog $accessLog;
-    /** @var PluginLog&MockObject */
-    private PluginLog $pluginLog;
+    /** @var ActionLog&MockObject */
+    private ActionLog $actionLog;
     private ClearanceRegistry $clearanceRegistry;
     /** @var TokenStorageInterface&MockObject */
     private TokenStorageInterface $tokenStorage;
@@ -40,17 +40,17 @@ final class PluginRunProcessorTest extends TestCase
     private ContextProvider $contextProvider;
     /** @var ExecutionContextInterface&MockObject */
     private ExecutionContextInterface $executionContext;
-    private PluginRunProcessor $processor;
+    private ActionRunProcessor $processor;
 
     protected function setUp(): void
     {
-        $this->registry = new PluginRegistry();
+        $this->registry = new ActionRegistry();
 
         $this->renderer = $this->createMock(OutputRendererInterface::class);
         $this->renderer->method('render')->willReturn('{"success":true,"summary":"ok","data":[]}');
 
         $this->accessLog = $this->createMock(AccessLog::class);
-        $this->pluginLog = $this->createMock(PluginLog::class);
+        $this->actionLog = $this->createMock(ActionLog::class);
         $this->clearanceRegistry = new ClearanceRegistry();
         $this->tokenStorage = $this->createMock(TokenStorageInterface::class);
         $this->tokenStorage->method('getToken')->willReturn(null); // anonymous
@@ -68,7 +68,7 @@ final class PluginRunProcessorTest extends TestCase
 
     // ── Basic execution ───────────────────────────────────────────────────────
 
-    public function testThrowsNotFoundForUnknownPlugin(): void
+    public function testThrowsNotFoundForUnknownAction(): void
     {
         $this->expectException(NotFoundHttpException::class);
 
@@ -81,7 +81,7 @@ final class PluginRunProcessorTest extends TestCase
 
     public function testReturnsJsonResponseOnSuccess(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping', PluginResult::ok(['pong' => 'pong'], '✅ pong')));
+        $this->registry->register($this->makeAction('core:system:ping', ActionResult::ok(['pong' => 'pong'], '✅ pong')));
 
         $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
@@ -96,13 +96,13 @@ final class PluginRunProcessorTest extends TestCase
         self::assertSame(Response::HTTP_OK, $response->getStatusCode());
     }
 
-    public function testReturnsUnprocessableEntityOnPluginError(): void
+    public function testReturnsUnprocessableEntityOnActionError(): void
     {
         $renderer = $this->createMock(OutputRendererInterface::class);
         $renderer->method('render')->willReturn('{"success":false,"summary":"fail","data":null}');
         $processor = $this->makeProcessor(renderer: $renderer);
 
-        $this->registry->register($this->makePlugin('core:system:fail', PluginResult::error('Something failed')));
+        $this->registry->register($this->makeAction('core:system:fail', ActionResult::error('Something failed')));
 
         $request = Request::create('/api/v1/core/default/system/fail/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
@@ -116,18 +116,18 @@ final class PluginRunProcessorTest extends TestCase
         self::assertSame(Response::HTTP_UNPROCESSABLE_ENTITY, $response->getStatusCode());
     }
 
-    public function testPassesArgsToPlugin(): void
+    public function testPassesArgsToAction(): void
     {
-        $plugin = $this->createMock(PluginInterface::class);
-        $plugin->method('getName')->willReturn('core:system:echo');
-        $plugin->method('getDefaultFormat')->willReturn('json');
-        $plugin->method('getDefaultTemplate')->willReturn(null);
-        $plugin->expects(self::once())
+        $action = $this->createMock(ActionInterface::class);
+        $action->method('getName')->willReturn('core:system:echo');
+        $action->method('getDefaultFormat')->willReturn('json');
+        $action->method('getDefaultTemplate')->willReturn(null);
+        $action->expects(self::once())
             ->method('execute')
             ->with(['message' => 'hello'], self::isInstanceOf(ExecutionContextInterface::class))
-            ->willReturn(PluginResult::ok(['message' => 'hello'], 'ok'));
+            ->willReturn(ActionResult::ok(['message' => 'hello'], 'ok'));
 
-        $this->registry->register($plugin);
+        $this->registry->register($action);
 
         $request = Request::create('/api/v1/core/default/system/echo/run', 'POST', content: '{"args":{"message":"hello"}}');
         $request->attributes->set('tenant', 'default');
@@ -141,8 +141,8 @@ final class PluginRunProcessorTest extends TestCase
 
     public function testUsesFormatFromRequestBody(): void
     {
-        $plugin = $this->makePlugin('core:system:ping', PluginResult::ok([], 'ok'));
-        $this->registry->register($plugin);
+        $action = $this->makeAction('core:system:ping', ActionResult::ok([], 'ok'));
+        $this->registry->register($action);
 
         $renderer = $this->createMock(OutputRendererInterface::class);
         $renderer->expects(self::once())
@@ -163,9 +163,9 @@ final class PluginRunProcessorTest extends TestCase
 
     public function testWorksWithoutRequest(): void
     {
-        $this->registry->register($this->makePlugin('core:system:ping', PluginResult::ok([], 'ok')));
+        $this->registry->register($this->makeAction('core:system:ping', ActionResult::ok([], 'ok')));
 
-        // No request in context — should still work using plugin defaults.
+        // No request in context — should still work using action defaults.
         $response = $this->processor->process(
             null,
             new Post(),
@@ -182,7 +182,7 @@ final class PluginRunProcessorTest extends TestCase
     {
         $this->accessLog->expects(self::once())->method('write');
 
-        $this->registry->register($this->makePlugin('core:system:ping', PluginResult::ok([], 'pong')));
+        $this->registry->register($this->makeAction('core:system:ping', ActionResult::ok([], 'pong')));
 
         $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
@@ -209,13 +209,13 @@ final class PluginRunProcessorTest extends TestCase
         }
     }
 
-    // ── V0.8: Plugin Log ─────────────────────────────────────────────────────
+    // ── V0.8: Action Log ─────────────────────────────────────────────────────
 
-    public function testPluginLogNotWrittenWithoutLedgerPayload(): void
+    public function testActionLogNotWrittenWithoutLedgerPayload(): void
     {
-        $this->pluginLog->expects(self::never())->method('write');
+        $this->actionLog->expects(self::never())->method('write');
 
-        $this->registry->register($this->makePlugin('core:system:ping', PluginResult::ok([], 'pong')));
+        $this->registry->register($this->makeAction('core:system:ping', ActionResult::ok([], 'pong')));
 
         $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
@@ -227,14 +227,14 @@ final class PluginRunProcessorTest extends TestCase
         );
     }
 
-    public function testPluginLogWrittenWhenLedgerPayloadSet(): void
+    public function testActionLogWrittenWhenLedgerPayloadSet(): void
     {
-        $this->pluginLog->expects(self::once())->method('write');
+        $this->actionLog->expects(self::once())->method('write');
 
-        $result = PluginResult::ok(['count' => 5], 'done')
+        $result = ActionResult::ok(['count' => 5], 'done')
             ->withLedger(level: 'info', payload: ['item_count' => 5]);
 
-        $this->registry->register($this->makePlugin('core:system:ping', $result));
+        $this->registry->register($this->makeAction('core:system:ping', $result));
 
         $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
@@ -248,13 +248,13 @@ final class PluginRunProcessorTest extends TestCase
 
     // ── V0.8: Scaffold guard ─────────────────────────────────────────────────
 
-    public function testScaffoldPluginDepotEligibilityIsStripped(): void
+    public function testScaffoldActionDepotEligibilityIsStripped(): void
     {
-        // Plugin declares depot eligibility
-        $rawResult = PluginResult::ok(['data' => true], 'ok')->withDepot(ttl: 3600);
+        // Action declares depot eligibility
+        $rawResult = ActionResult::ok(['data' => true], 'ok')->withDepot(ttl: 3600);
 
-        // Scaffold plugin implementing ScaffoldPluginInterface
-        $scaffold = $this->createMock(ScaffoldPluginInterface::class);
+        // Scaffold action implementing ScaffoldActionInterface
+        $scaffold = $this->createMock(ScaffoldActionInterface::class);
         $scaffold->method('getName')->willReturn('core:scaffold:raw');
         $scaffold->method('getDefaultFormat')->willReturn('json');
         $scaffold->method('getDefaultTemplate')->willReturn(null);
@@ -277,11 +277,11 @@ final class PluginRunProcessorTest extends TestCase
         $this->addToAssertionCount(1); // guard: no exception thrown, scaffold was handled
     }
 
-    // ── V0.8: PluginResult builder methods ───────────────────────────────────
+    // ── V0.8: ActionResult builder methods ───────────────────────────────────
 
     public function testWithDepotSetsEligibility(): void
     {
-        $result = PluginResult::ok([], 'ok');
+        $result = ActionResult::ok([], 'ok');
         self::assertFalse($result->depotEligible);
         self::assertSame(3600, $result->depotTtl);
 
@@ -293,7 +293,7 @@ final class PluginRunProcessorTest extends TestCase
 
     public function testWithoutDepotStripsEligibility(): void
     {
-        $result = PluginResult::ok([], 'ok')->withDepot(ttl: 3600);
+        $result = ActionResult::ok([], 'ok')->withDepot(ttl: 3600);
         self::assertTrue($result->depotEligible);
 
         $stripped = $result->withoutDepot();
@@ -303,7 +303,7 @@ final class PluginRunProcessorTest extends TestCase
 
     public function testWithLedgerSetsPayload(): void
     {
-        $result = PluginResult::ok([], 'ok');
+        $result = ActionResult::ok([], 'ok');
         self::assertNull($result->ledgerPayload);
 
         $withLedger = $result->withLedger(level: 'warning', payload: ['count' => 42]);
@@ -314,27 +314,27 @@ final class PluginRunProcessorTest extends TestCase
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private function makeProcessor(?OutputRendererInterface $renderer = null): PluginRunProcessor
+    private function makeProcessor(?OutputRendererInterface $renderer = null): ActionRunProcessor
     {
-        return new PluginRunProcessor(
+        return new ActionRunProcessor(
             registry: $this->registry,
             renderer: $renderer ?? $this->renderer,
             accessLog: $this->accessLog,
-            pluginLog: $this->pluginLog,
+            actionLog: $this->actionLog,
             clearanceRegistry: $this->clearanceRegistry,
             contextProvider: $this->contextProvider,
             tokenStorage: $this->tokenStorage, // anonymous — returns null token
         );
     }
 
-    private function makePlugin(string $name, PluginResult $result): PluginInterface
+    private function makeAction(string $name, ActionResult $result): ActionInterface
     {
-        $plugin = $this->createMock(PluginInterface::class);
-        $plugin->method('getName')->willReturn($name);
-        $plugin->method('getDefaultFormat')->willReturn('json');
-        $plugin->method('getDefaultTemplate')->willReturn(null);
-        $plugin->method('execute')->willReturn($result);
+        $action = $this->createMock(ActionInterface::class);
+        $action->method('getName')->willReturn($name);
+        $action->method('getDefaultFormat')->willReturn('json');
+        $action->method('getDefaultTemplate')->willReturn(null);
+        $action->method('execute')->willReturn($result);
 
-        return $plugin;
+        return $action;
     }
 }

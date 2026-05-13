@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace Mosyca\Core\Tests\Plugin;
+namespace Mosyca\Core\Tests\Action;
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 use PHPUnit\Framework\TestCase;
 
-final class PluginResultTest extends TestCase
+final class ActionResultTest extends TestCase
 {
     public function testOkResult(): void
     {
-        $result = PluginResult::ok(['key' => 'value'], 'Success summary');
+        $result = ActionResult::ok(['key' => 'value'], 'Success summary');
 
         self::assertTrue($result->success);
         self::assertSame(['key' => 'value'], $result->data);
@@ -22,7 +22,7 @@ final class PluginResultTest extends TestCase
 
     public function testErrorResult(): void
     {
-        $result = PluginResult::error('Something went wrong', ['code' => 404]);
+        $result = ActionResult::error('Something went wrong', ['code' => 404]);
 
         self::assertFalse($result->success);
         self::assertSame('Something went wrong', $result->summary);
@@ -31,7 +31,7 @@ final class PluginResultTest extends TestCase
 
     public function testErrorWithoutContextDefaults(): void
     {
-        $result = PluginResult::error('Oops');
+        $result = ActionResult::error('Oops');
 
         self::assertFalse($result->success);
         self::assertIsArray($result->data);
@@ -40,7 +40,7 @@ final class PluginResultTest extends TestCase
 
     public function testWithLinksIsImmutable(): void
     {
-        $original = PluginResult::ok([], 'ok');
+        $original = ActionResult::ok([], 'ok');
         $withLinks = $original->withLinks(['self' => '/api/test']);
 
         self::assertNotSame($original, $withLinks);
@@ -50,7 +50,7 @@ final class PluginResultTest extends TestCase
 
     public function testWithEmbeddedIsImmutable(): void
     {
-        $original = PluginResult::ok([], 'ok');
+        $original = ActionResult::ok([], 'ok');
         $withEmbedded = $original->withEmbedded(['order' => ['id' => 1]]);
 
         self::assertNotSame($original, $withEmbedded);
@@ -60,7 +60,7 @@ final class PluginResultTest extends TestCase
 
     public function testToArrayContainsRequiredKeys(): void
     {
-        $result = PluginResult::ok(['x' => 1], 'summary');
+        $result = ActionResult::ok(['x' => 1], 'summary');
         $array = $result->toArray();
 
         self::assertArrayHasKey('success', $array);
@@ -70,7 +70,7 @@ final class PluginResultTest extends TestCase
 
     public function testToArrayOmitsEmptyLinksAndEmbedded(): void
     {
-        $array = PluginResult::ok([], 'ok')->toArray();
+        $array = ActionResult::ok([], 'ok')->toArray();
 
         self::assertArrayNotHasKey('_links', $array);
         self::assertArrayNotHasKey('_embedded', $array);
@@ -79,7 +79,7 @@ final class PluginResultTest extends TestCase
 
     public function testToArrayIncludesLinksWhenPresent(): void
     {
-        $array = PluginResult::ok([], 'ok')
+        $array = ActionResult::ok([], 'ok')
             ->withLinks(['self' => '/api'])
             ->toArray();
 
@@ -89,7 +89,7 @@ final class PluginResultTest extends TestCase
 
     public function testToArrayIncludesEmbeddedWhenPresent(): void
     {
-        $array = PluginResult::ok([], 'ok')
+        $array = ActionResult::ok([], 'ok')
             ->withEmbedded(['item' => ['id' => 42]])
             ->toArray();
 
@@ -99,7 +99,7 @@ final class PluginResultTest extends TestCase
 
     public function testChaining(): void
     {
-        $result = PluginResult::ok(['data' => true], 'ok')
+        $result = ActionResult::ok(['data' => true], 'ok')
             ->withLinks(['self' => '/api/resource'])
             ->withEmbedded(['related' => []]);
 
@@ -112,7 +112,7 @@ final class PluginResultTest extends TestCase
 
     public function testDefaultDepotEligibilityIsFalse(): void
     {
-        $result = PluginResult::ok([], 'ok');
+        $result = ActionResult::ok([], 'ok');
 
         self::assertFalse($result->depotEligible);
         self::assertSame(3600, $result->depotTtl);
@@ -120,7 +120,7 @@ final class PluginResultTest extends TestCase
 
     public function testWithDepotSetsEligibility(): void
     {
-        $original = PluginResult::ok([], 'ok');
+        $original = ActionResult::ok([], 'ok');
         $cached = $original->withDepot(ttl: 7200);
 
         self::assertNotSame($original, $cached);
@@ -131,7 +131,7 @@ final class PluginResultTest extends TestCase
 
     public function testWithDepotDefaultTtl(): void
     {
-        $result = PluginResult::ok([], 'ok')->withDepot();
+        $result = ActionResult::ok([], 'ok')->withDepot();
 
         self::assertTrue($result->depotEligible);
         self::assertSame(3600, $result->depotTtl);
@@ -139,7 +139,7 @@ final class PluginResultTest extends TestCase
 
     public function testWithoutDepotStripsEligibility(): void
     {
-        $eligible = PluginResult::ok([], 'ok')->withDepot(ttl: 9000);
+        $eligible = ActionResult::ok([], 'ok')->withDepot(ttl: 9000);
         $stripped = $eligible->withoutDepot();
 
         self::assertNotSame($eligible, $stripped);
@@ -150,7 +150,7 @@ final class PluginResultTest extends TestCase
 
     public function testWithDepotPreservesOtherFields(): void
     {
-        $result = PluginResult::error('oops')
+        $result = ActionResult::error('oops')
             ->withLedger(level: 'warning', payload: ['reason' => 'test'])
             ->withDepot(ttl: 600);
 
@@ -163,7 +163,7 @@ final class PluginResultTest extends TestCase
 
     public function testDefaultLedgerPayloadIsNull(): void
     {
-        $result = PluginResult::ok([], 'ok');
+        $result = ActionResult::ok([], 'ok');
 
         self::assertNull($result->ledgerPayload);
         self::assertSame('info', $result->ledgerLevel);
@@ -171,7 +171,7 @@ final class PluginResultTest extends TestCase
 
     public function testWithLedgerSetsPayload(): void
     {
-        $original = PluginResult::ok([], 'ok');
+        $original = ActionResult::ok([], 'ok');
         $logged = $original->withLedger(level: 'warning', payload: ['count' => 42]);
 
         self::assertNotSame($original, $logged);
@@ -182,14 +182,14 @@ final class PluginResultTest extends TestCase
 
     public function testWithLedgerDefaultLevel(): void
     {
-        $result = PluginResult::ok([], 'ok')->withLedger(payload: ['x' => 1]);
+        $result = ActionResult::ok([], 'ok')->withLedger(payload: ['x' => 1]);
 
         self::assertSame('info', $result->ledgerLevel);
     }
 
     public function testWithLedgerPreservesDepot(): void
     {
-        $result = PluginResult::ok([], 'ok')
+        $result = ActionResult::ok([], 'ok')
             ->withDepot(ttl: 1800)
             ->withLedger(level: 'info', payload: ['items' => 5]);
 
@@ -200,8 +200,8 @@ final class PluginResultTest extends TestCase
 
     public function testScaffoldGuardPattern(): void
     {
-        // Simulates what PluginRunProcessor does for scaffold plugins
-        $result = PluginResult::ok(['pii' => 'data'], 'raw')->withDepot(ttl: 3600);
+        // Simulates what ActionRunProcessor does for scaffold actions
+        $result = ActionResult::ok(['pii' => 'data'], 'raw')->withDepot(ttl: 3600);
         self::assertTrue($result->depotEligible);
 
         $guarded = $result->withoutDepot();
@@ -209,14 +209,14 @@ final class PluginResultTest extends TestCase
         self::assertSame(['pii' => 'data'], $guarded->data); // data unchanged
     }
 
-    // ── AC 6: PluginResult::failure() ────────────────────────────────────────
+    // ── AC 6: ActionResult::failure() ────────────────────────────────────────
 
     /**
      * AC 6: failure() must return errorCode non-null.
      */
     public function testFailureReturnsNonNullErrorCode(): void
     {
-        $result = PluginResult::failure(
+        $result = ActionResult::failure(
             'Access denied.',
             'ERROR_ACL_DENIED',
             'Provide the correct security_pin.',
@@ -231,7 +231,7 @@ final class PluginResultTest extends TestCase
      */
     public function testFailureReturnsNonNullCorrectionHint(): void
     {
-        $result = PluginResult::failure(
+        $result = ActionResult::failure(
             'Access denied.',
             'ERROR_ACL_DENIED',
             'Provide the correct security_pin.',
@@ -243,7 +243,7 @@ final class PluginResultTest extends TestCase
 
     public function testFailureIsNotSuccess(): void
     {
-        $result = PluginResult::failure(
+        $result = ActionResult::failure(
             'Something failed.',
             'ERROR_DOMAIN',
             'Check your input.',
@@ -255,7 +255,7 @@ final class PluginResultTest extends TestCase
 
     public function testFailureAcceptsContextArray(): void
     {
-        $result = PluginResult::failure(
+        $result = ActionResult::failure(
             'Invalid PIN.',
             'ERROR_INVALID_PIN',
             'Provide valid security_pin in payload field "pin".',
@@ -267,7 +267,7 @@ final class PluginResultTest extends TestCase
 
     public function testFailureWithEmptyContextDefaultsToEmptyArray(): void
     {
-        $result = PluginResult::failure(
+        $result = ActionResult::failure(
             'Denied.',
             'ERROR_ACL_DENIED',
             'Contact administrator.',
@@ -282,7 +282,7 @@ final class PluginResultTest extends TestCase
      */
     public function testErrorBackwardCompatStillWorks(): void
     {
-        $result = PluginResult::error('Something went wrong', ['code' => 404]);
+        $result = ActionResult::error('Something went wrong', ['code' => 404]);
 
         self::assertFalse($result->success);
         self::assertSame('Something went wrong', $result->summary);
@@ -293,7 +293,7 @@ final class PluginResultTest extends TestCase
      */
     public function testErrorSetsErrorLegacyCode(): void
     {
-        $result = PluginResult::error('Oops');
+        $result = ActionResult::error('Oops');
 
         self::assertSame('ERROR_LEGACY', $result->errorCode);
     }

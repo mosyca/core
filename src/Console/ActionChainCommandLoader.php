@@ -15,7 +15,7 @@ use Symfony\Component\Console\Exception\CommandNotFoundException;
  *
  * Used instead of the (unavailable) symfony/console ChainCommandLoader.
  */
-final class PluginChainCommandLoader implements CommandLoaderInterface
+final class ActionChainCommandLoader implements CommandLoaderInterface
 {
     public function __construct(
         private readonly CommandLoaderInterface $builtin,

@@ -10,11 +10,11 @@ namespace Mosyca\Core\Depot;
  * Allows Claude (or routines) to avoid redundant API calls across sessions.
  * Not a database — a TTL-aware key/value file store.
  *
- * Access model (double opt-in, enforced in PluginRunProcessor):
- *   Layer 1: PluginResult declares eligibility via ->withDepot(ttl: N)
+ * Access model (double opt-in, enforced in ActionRunProcessor):
+ *   Layer 1: ActionResult declares eligibility via ->withDepot(ttl: N)
  *   Layer 2: Caller activates per call via {"depot": true} in request body
  *
- * Scaffold plugins are permanently excluded, enforced in PluginRunProcessor.
+ * Scaffold actions are permanently excluded, enforced in ActionRunProcessor.
  */
 interface DepotInterface
 {

@@ -22,7 +22,7 @@ use Symfony\Component\Security\Core\User\UserInterface;
  * AC 3: Missing tenant → RuntimeException
  * AC 4: A impersonates B → getUserId()===B, getActingUserId()===A
  * AC 5: ROLE_ADMIN without ROLE_MANAGER → isAclBypassed()===false
- * AC 6: see PluginResultTest
+ * AC 6: see ActionResultTest
  * CLI: createForCli() → isAclBypassed()===false
  */
 final class ContextProviderTest extends TestCase

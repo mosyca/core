@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace Mosyca\Core\Plugin;
+namespace Mosyca\Core\Action;
 
 use Mosyca\Core\Context\ExecutionContextInterface;
 
 /**
- * PluginInterface – The Mosyca Core Contract.
+ * ActionInterface – The Mosyca Core Contract.
  *
  * One implementation automatically becomes:
  *   - MCP Tool       (Claude Desktop / Claude Code)
@@ -17,7 +17,7 @@ use Mosyca\Core\Context\ExecutionContextInterface;
  *   - PWA Page       (Studio)
  *   - OpenAPI Entry  (auto-generated)
  *
- * Naming convention: "{connector}:{resource}:{action}"
+ * Naming convention: "{plugin_name}:{resource}:{action}"
  *   Examples: "shopware:order:get-margin", "spotify:playlist:add-track"
  *
  * REST route pattern: /api/v1/{plugin_name}/{tenant}/{resource}/{action}/run
@@ -27,19 +27,19 @@ use Mosyca\Core\Context\ExecutionContextInterface;
  *
  * Stability contract:
  *   - This interface is FROZEN after V1.0. No new required methods will ever be added.
- *   - New optional capabilities → new capability interface (e.g. TemplateAwarePluginInterface).
- *   - Use PluginTrait to automatically get defaults for all optional capability interfaces.
+ *   - New optional capabilities → new capability interface (e.g. TemplateAwareActionInterface).
+ *   - Use ActionTrait to automatically get defaults for all optional capability interfaces.
  */
-interface PluginInterface
+interface ActionInterface
 {
     /**
-     * Unique plugin identifier.
+     * Unique action identifier.
      *
      * Used as:
      *   MCP Tool name:   shopware_order_get_margin
      *   CLI command:     shopware:order:get-margin
-     *   REST route:      /api/plugins/shopware/order/get-margin/run
-     *   PWA page:        /plugins/shopware/order/get-margin
+     *   REST route:      /api/v1/shopware/default/order/get-margin/run
+     *   PWA page:        /actions/shopware/order/get-margin
      */
     public function getName(): string;
 
@@ -47,14 +47,14 @@ interface PluginInterface
      * Short description (one line).
      *
      * Shown in MCP list_tools, bin/console list,
-     * GET /api/plugins, Studio plugin list, OpenAPI summary.
+     * GET /api/v1/plugins, Studio action list, OpenAPI summary.
      */
     public function getDescription(): string;
 
     /**
      * Full usage documentation.
      *
-     * Claude Code reads this to understand WHEN to use this plugin,
+     * Claude Code reads this to understand WHEN to use this action,
      * WHAT it returns, WHICH error cases exist, and example inputs/outputs.
      * Write this as if explaining to a smart developer who has never seen
      * your code. Markdown is supported.
@@ -96,7 +96,7 @@ interface PluginInterface
     /**
      * Tags for grouping and discovery.
      *
-     * Used in Studio plugin explorer, Exchange marketplace,
+     * Used in Studio action explorer, Exchange marketplace,
      * and bin/console list --tag=ecommerce.
      *
      * @return string[]
@@ -104,7 +104,7 @@ interface PluginInterface
     public function getTags(): array;
 
     /**
-     * Is this plugin mutating (write) or readonly?
+     * Is this action mutating (write) or readonly?
      *
      * true  → writes data, has side effects. CLI asks for confirmation.
      *         MCP warns Claude before execution. Ledger logs WARNING.
@@ -129,18 +129,18 @@ interface PluginInterface
     public function getDefaultTemplate(): ?string;
 
     /**
-     * Execute the plugin.
+     * Execute the action.
      *
      * $args is validated against getParameters() before execute() is called.
      * You can rely on required params being present and correctly typed.
      *
      * $context carries the immutable execution context (tenant, user, ACL bypass flag).
-     * Plugins must NOT import Symfony classes — use only ExecutionContextInterface.
+     * Actions must NOT import Symfony classes — use only ExecutionContextInterface.
      *
      * ACL vector pattern (domain-level authentication):
      * <code>
      *     if (!$context->isAclBypassed() && !$this->validatePin($args['pin'] ?? null)) {
-     *         return PluginResult::failure(
+     *         return ActionResult::failure(
      *             'Access denied. Domain authentication failed.',
      *             'ERROR_ACL_DENIED',
      *             'Provide the correct security_pin in the payload.',
@@ -151,8 +151,8 @@ interface PluginInterface
      * @param array<string, mixed>      $args    Validated input parameters
      * @param ExecutionContextInterface $context Immutable execution context
      *
-     * Never throw for business errors — use PluginResult::failure() instead.
+     * Never throw for business errors — use ActionResult::failure() instead.
      * Only throw for truly unexpected system errors.
      */
-    public function execute(array $args, ExecutionContextInterface $context): PluginResult;
+    public function execute(array $args, ExecutionContextInterface $context): ActionResult;
 }

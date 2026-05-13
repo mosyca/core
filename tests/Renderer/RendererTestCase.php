@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Tests\Renderer;
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 use PHPUnit\Framework\TestCase;
 
 abstract class RendererTestCase extends TestCase
 {
-    protected function sampleResult(): PluginResult
+    protected function sampleResult(): ActionResult
     {
-        return PluginResult::ok(
+        return ActionResult::ok(
             data: ['margin_absolute' => 47.30, 'margin_percent' => 23.5],
             summary: 'Order #1234: margin 47.30€ (23.5%)',
         )
@@ -19,8 +19,8 @@ abstract class RendererTestCase extends TestCase
         ->withEmbedded(['order' => ['id' => 'abc123', 'orderNumber' => '1234']]);
     }
 
-    protected function errorResult(): PluginResult
+    protected function errorResult(): ActionResult
     {
-        return PluginResult::error('Order not found.', ['order_id' => 'xyz']);
+        return ActionResult::error('Order not found.', ['order_id' => 'xyz']);
     }
 }

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Mosyca\Core\Plugin\Builtin;
+namespace Mosyca\Core\Action\Builtin;
 
+use Mosyca\Core\Action\ActionResult;
+use Mosyca\Core\Action\ActionTrait;
+use Mosyca\Core\Action\Attribute\AsAction;
+use Mosyca\Core\Action\TemplateAwareActionInterface;
 use Mosyca\Core\Context\ExecutionContextInterface;
-use Mosyca\Core\Plugin\Attribute\AsPlugin;
-use Mosyca\Core\Plugin\PluginResult;
-use Mosyca\Core\Plugin\PluginTrait;
-use Mosyca\Core\Plugin\TemplateAwarePluginInterface;
 
-#[AsPlugin]
-final class EchoPlugin implements TemplateAwarePluginInterface
+#[AsAction]
+final class EchoAction implements TemplateAwareActionInterface
 {
-    use PluginTrait;
+    use ActionTrait;
 
     public function getName(): string
     {
@@ -63,10 +63,10 @@ final class EchoPlugin implements TemplateAwarePluginInterface
         return false;
     }
 
-    public function execute(array $args, ExecutionContextInterface $context): PluginResult
+    public function execute(array $args, ExecutionContextInterface $context): ActionResult
     {
-        // Built-in debug plugin: no domain ACL vector required (AC 1 illustration).
-        return PluginResult::ok(
+        // Built-in debug action: no domain ACL vector required (AC 1 illustration).
+        return ActionResult::ok(
             data: $args,
             summary: 'echo: '.($args['message'] ?? '(empty)'),
         );

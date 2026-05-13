@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Renderer;
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 
 /**
  * Produces human-readable plain text optimised for Claude (MCP context).
@@ -20,7 +20,7 @@ use Mosyca\Core\Plugin\PluginResult;
  */
 final class McpRenderer
 {
-    public function render(PluginResult $result): string
+    public function render(ActionResult $result): string
     {
         $prefix = $result->success ? '✅' : '❌';
         $lines = ["{$prefix} {$result->summary}", ''];

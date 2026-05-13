@@ -6,21 +6,21 @@ namespace Mosyca\Core\Gateway\Provider;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProviderInterface;
-use Mosyca\Core\Gateway\Resource\PluginResource;
-use Mosyca\Core\Plugin\PluginInterface;
-use Mosyca\Core\Plugin\PluginRegistry;
+use Mosyca\Core\Action\ActionInterface;
+use Mosyca\Core\Action\ActionRegistry;
+use Mosyca\Core\Gateway\Resource\ActionResource;
 
 /**
- * API Platform state provider for PluginResource.
+ * API Platform state provider for ActionResource.
  *
  * Handles both collection (GET /api/v1/plugins) and item
  * (GET /api/v1/{plugin_name}/{tenant}/{resource}/{action}).
  *
- * @implements ProviderInterface<PluginResource>
+ * @implements ProviderInterface<ActionResource>
  */
-final class PluginProvider implements ProviderInterface
+final class ActionProvider implements ProviderInterface
 {
-    public function __construct(private readonly PluginRegistry $registry)
+    public function __construct(private readonly ActionRegistry $registry)
     {
     }
 
@@ -47,16 +47,16 @@ final class PluginProvider implements ProviderInterface
         $mutating = null !== $mutatingRaw ? filter_var($mutatingRaw, \FILTER_VALIDATE_BOOLEAN) : null;
 
         return array_values(array_map(
-            fn (PluginInterface $p): PluginResource => $this->toResource($p, full: false),
+            fn (ActionInterface $a): ActionResource => $this->toResource($a, full: false),
             $this->registry->filter(connector: $connector, tag: $tag, mutating: $mutating),
         ));
     }
 
-    private function toResource(PluginInterface $plugin, bool $full): PluginResource
+    private function toResource(ActionInterface $plugin, bool $full): ActionResource
     {
         $parts = explode(':', $plugin->getName(), 3);
 
-        $res = new PluginResource();
+        $res = new ActionResource();
         $res->name = $plugin->getName();
         $res->plugin_name = $parts[0];
         $res->resource = $parts[1] ?? '';
@@ -90,7 +90,7 @@ final class PluginProvider implements ProviderInterface
     }
 
     /** @return array<string, mixed> */
-    private function buildJsonSchema(PluginInterface $plugin): array
+    private function buildJsonSchema(ActionInterface $plugin): array
     {
         $properties = [];
         $required = [];

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Renderer;
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 final class TableRenderer
 {
-    public function render(PluginResult $result): string
+    public function render(ActionResult $result): string
     {
         $output = new BufferedOutput();
         $table = new Table($output);

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-namespace Mosyca\Core\Plugin\Builtin;
+namespace Mosyca\Core\Action\Builtin;
 
+use Mosyca\Core\Action\ActionResult;
+use Mosyca\Core\Action\ActionTrait;
+use Mosyca\Core\Action\Attribute\AsAction;
+use Mosyca\Core\Action\TemplateAwareActionInterface;
 use Mosyca\Core\Context\ExecutionContextInterface;
-use Mosyca\Core\Plugin\Attribute\AsPlugin;
-use Mosyca\Core\Plugin\PluginResult;
-use Mosyca\Core\Plugin\PluginTrait;
-use Mosyca\Core\Plugin\TemplateAwarePluginInterface;
 
-#[AsPlugin]
-final class PingPlugin implements TemplateAwarePluginInterface
+#[AsAction]
+final class PingAction implements TemplateAwareActionInterface
 {
-    use PluginTrait;
+    use ActionTrait;
 
     public function getName(): string
     {
@@ -22,13 +22,13 @@ final class PingPlugin implements TemplateAwarePluginInterface
 
     public function getDescription(): string
     {
-        return 'Returns pong. Confirms the plugin contract works end-to-end.';
+        return 'Returns pong. Confirms the action contract works end-to-end.';
     }
 
     public function getUsage(): string
     {
         return <<<'USAGE'
-        Health-check plugin. Takes an optional message and echoes it back.
+        Health-check action. Takes an optional message and echoes it back.
 
         ## Returns
         - pong: always "pong"
@@ -64,10 +64,10 @@ final class PingPlugin implements TemplateAwarePluginInterface
         return false;
     }
 
-    public function execute(array $args, ExecutionContextInterface $context): PluginResult
+    public function execute(array $args, ExecutionContextInterface $context): ActionResult
     {
         // Built-in health-check: no domain ACL vector required (AC 1 illustration).
-        return PluginResult::ok(
+        return ActionResult::ok(
             data: ['pong' => 'pong', 'echo' => $args['message'] ?? null],
             summary: '✅ pong',
         );

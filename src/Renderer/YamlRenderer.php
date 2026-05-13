@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Renderer;
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 use Symfony\Component\Yaml\Yaml;
 
 final class YamlRenderer
@@ -13,7 +13,7 @@ final class YamlRenderer
     {
     }
 
-    public function render(PluginResult $result): string
+    public function render(ActionResult $result): string
     {
         return Yaml::dump(
             $this->normalizer->normalize($result),

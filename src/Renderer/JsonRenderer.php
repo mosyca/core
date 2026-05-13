@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Renderer;
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 
 final class JsonRenderer
 {
@@ -12,7 +12,7 @@ final class JsonRenderer
     {
     }
 
-    public function render(PluginResult $result): string
+    public function render(ActionResult $result): string
     {
         return json_encode(
             $this->normalizer->normalize($result),

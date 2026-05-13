@@ -7,18 +7,18 @@ namespace Mosyca\Core\Ledger;
 /**
  * Access Log — always-on, arg-free audit trail.
  *
- * Written by PluginRunProcessor on every plugin execution, regardless of
- * result or plugin configuration. Never contains request arguments or result data.
+ * Written by ActionRunProcessor on every action execution, regardless of
+ * result or action configuration. Never contains request arguments or result data.
  *
  * File: {logDir}/access.jsonl
  *
  * Schema (fixed — no request-arg fields ever present):
  *   ts          ISO 8601 with timezone
- *   request_id  UUID v4 — correlates with Plugin Log
+ *   request_id  UUID v4 — correlates with Action Log
  *   operator    Operator username
  *   clearance   Clearance level at time of call
  *   tenant_id   Tenant identifier (V0.9+, null for legacy entries)
- *   plugin      Full plugin name e.g. "shopware:order:get-revenue"
+ *   action      Full action name e.g. "shopware:order:get-revenue"
  *   duration_ms Wall time from dispatch to result
  *   success     bool
  *   error_code  Error category or null (never a message, never PII)
@@ -29,9 +29,9 @@ namespace Mosyca\Core\Ledger;
  *   timeout      Outbound API call timed out
  *   auth_error   Outbound authentication failed
  *   api_error    Remote API returned 4xx/5xx
- *   plugin_error Unhandled exception or logic error inside plugin run()
- *   acl_denied   Clearance blocked this plugin call
- *   not_found    Plugin or resource not found
+ *   action_error Unhandled exception or logic error inside action run()
+ *   acl_denied   Clearance blocked this action call
+ *   not_found    Action or resource not found
  */
 class AccessLog
 {
@@ -50,7 +50,7 @@ class AccessLog
      *   operator: string,
      *   clearance: string,
      *   tenant_id: string,
-     *   plugin: string,
+     *   action: string,
      *   duration_ms: int,
      *   success: bool,
      *   error_code: string|null,

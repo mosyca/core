@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Console;
 
+use Mosyca\Core\Action\ActionInterface;
+use Mosyca\Core\Action\ActionRegistry;
 use Mosyca\Core\Context\ContextProvider;
-use Mosyca\Core\Plugin\PluginInterface;
-use Mosyca\Core\Plugin\PluginRegistry;
 use Mosyca\Core\Renderer\OutputRendererInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\CommandLoader\CommandLoaderInterface;
@@ -22,7 +22,7 @@ use Symfony\Component\Console\Exception\CommandNotFoundException;
 final class ConsoleAdapter implements CommandLoaderInterface
 {
     public function __construct(
-        private readonly PluginRegistry $registry,
+        private readonly ActionRegistry $registry,
         private readonly OutputRendererInterface $renderer,
         private readonly ContextProvider $contextProvider,
     ) {
@@ -31,7 +31,7 @@ final class ConsoleAdapter implements CommandLoaderInterface
     public function get(string $name): Command
     {
         if (!$this->has($name)) {
-            throw new CommandNotFoundException(\sprintf('Plugin command "%s" not found.', $name));
+            throw new CommandNotFoundException(\sprintf('Action command "%s" not found.', $name));
         }
 
         return $this->buildCommand($this->registry->get($name));
@@ -48,8 +48,8 @@ final class ConsoleAdapter implements CommandLoaderInterface
         return array_keys($this->registry->all());
     }
 
-    public function buildCommand(PluginInterface $plugin): Command
+    public function buildCommand(ActionInterface $action): Command
     {
-        return new PluginCommand($plugin, $this->renderer, $this->contextProvider);
+        return new ActionCommand($action, $this->renderer, $this->contextProvider);
     }
 }

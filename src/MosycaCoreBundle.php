@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Mosyca\Core;
 
-use Mosyca\Core\DependencyInjection\Compiler\PluginCommandLoaderPass;
-use Mosyca\Core\DependencyInjection\Compiler\PluginRegistrationPass;
+use Mosyca\Core\DependencyInjection\Compiler\ActionCommandLoaderPass;
+use Mosyca\Core\DependencyInjection\Compiler\ActionRegistrationPass;
 use Symfony\Component\DependencyInjection\Compiler\PassConfig;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Bundle\Bundle;
@@ -15,8 +15,8 @@ final class MosycaCoreBundle extends Bundle
     public function build(ContainerBuilder $container): void
     {
         parent::build($container);
-        $container->addCompilerPass(new PluginRegistrationPass());
+        $container->addCompilerPass(new ActionRegistrationPass());
         // Run after AddConsoleCommandPass (priority 0) has created console.command_loader.
-        $container->addCompilerPass(new PluginCommandLoaderPass(), PassConfig::TYPE_BEFORE_REMOVING, -10);
+        $container->addCompilerPass(new ActionCommandLoaderPass(), PassConfig::TYPE_BEFORE_REMOVING, -10);
     }
 }

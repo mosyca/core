@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Renderer;
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 use Twig\Environment;
 use Twig\Extension\SandboxExtension;
 use Twig\Loader\ArrayLoader;
@@ -26,7 +26,7 @@ final class TwigRenderer
         );
     }
 
-    public function render(PluginResult $result, ?string $template): string
+    public function render(ActionResult $result, ?string $template): string
     {
         $context = $this->normalizer->normalize($result);
 

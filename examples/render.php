@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require __DIR__.'/../vendor/autoload.php';
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 use Mosyca\Core\Renderer\JsonRenderer;
 use Mosyca\Core\Renderer\McpRenderer;
 use Mosyca\Core\Renderer\Normalizer;
@@ -20,7 +20,7 @@ $format = is_string($opts['format'] ?? null) ? $opts['format'] : 'json';
 $template = is_string($opts['template'] ?? null) ? $opts['template'] : null;
 
 // Sample result with data, links, and embedded
-$result = PluginResult::ok(
+$result = ActionResult::ok(
     data: [
         'margin_absolute' => 47.30,
         'margin_percent' => 23.5,

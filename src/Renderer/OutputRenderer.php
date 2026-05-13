@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Renderer;
 
-use Mosyca\Core\Plugin\PluginResult;
+use Mosyca\Core\Action\ActionResult;
 
 final class OutputRenderer implements OutputRendererInterface
 {
@@ -19,7 +19,7 @@ final class OutputRenderer implements OutputRendererInterface
     }
 
     public function render(
-        PluginResult $result,
+        ActionResult $result,
         string $format = 'json',
         ?string $template = null,
     ): string {

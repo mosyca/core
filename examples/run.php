@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 require __DIR__.'/../vendor/autoload.php';
 
+use Mosyca\Core\Action\ActionRegistry;
+use Mosyca\Core\Action\Builtin\PingAction;
 use Mosyca\Core\Context\ExecutionContext;
-use Mosyca\Core\Plugin\Builtin\PingPlugin;
-use Mosyca\Core\Plugin\PluginRegistry;
 
-$registry = new PluginRegistry();
-$registry->register(new PingPlugin());
+$registry = new ActionRegistry();
+$registry->register(new PingAction());
 
 // Build a minimal CLI context for standalone script usage.
 $context = new ExecutionContext(
