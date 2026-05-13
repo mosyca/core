@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Plugin\Builtin;
 
+use Mosyca\Core\Context\ExecutionContextInterface;
 use Mosyca\Core\Plugin\Attribute\AsPlugin;
 use Mosyca\Core\Plugin\PluginResult;
 use Mosyca\Core\Plugin\PluginTrait;
@@ -63,8 +64,9 @@ final class PingPlugin implements TemplateAwarePluginInterface
         return false;
     }
 
-    public function execute(array $args): PluginResult
+    public function execute(array $args, ExecutionContextInterface $context): PluginResult
     {
+        // Built-in health-check: no domain ACL vector required (AC 1 illustration).
         return PluginResult::ok(
             data: ['pong' => 'pong', 'echo' => $args['message'] ?? null],
             summary: '✅ pong',

@@ -13,8 +13,8 @@ use Mosyca\Core\Plugin\PluginRegistry;
 /**
  * API Platform state provider for PluginResource.
  *
- * Handles both collection (GET /api/plugins) and item
- * (GET /api/plugins/{connector}/{resource}/{action}).
+ * Handles both collection (GET /api/v1/plugins) and item
+ * (GET /api/v1/{plugin_name}/{tenant}/{resource}/{action}).
  *
  * @implements ProviderInterface<PluginResource>
  */
@@ -26,8 +26,8 @@ final class PluginProvider implements ProviderInterface
 
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
-        // Item operation: GET /api/plugins/{connector}/{resource}/{action}
-        if (isset($uriVariables['connector'])) {
+        // Item operation: GET /api/v1/{plugin_name}/{tenant}/{resource}/{action}
+        if (isset($uriVariables['plugin_name'])) {
             $name = $this->nameFromVars($uriVariables);
 
             if (!$this->registry->has($name)) {
@@ -37,9 +37,11 @@ final class PluginProvider implements ProviderInterface
             return $this->toResource($this->registry->get($name), full: true);
         }
 
-        // Collection operation: GET /api/plugins
+        // Collection operation: GET /api/v1/plugins
         $filters = $context['filters'] ?? [];
+        // Filter by connector/plugin_name — accept both for backward compat
         $connector = isset($filters['connector']) ? (string) $filters['connector'] : null;
+        $connector ??= isset($filters['plugin_name']) ? (string) $filters['plugin_name'] : null;
         $tag = isset($filters['tag']) ? (string) $filters['tag'] : null;
         $mutatingRaw = $filters['mutating'] ?? null;
         $mutating = null !== $mutatingRaw ? filter_var($mutatingRaw, \FILTER_VALIDATE_BOOLEAN) : null;
@@ -56,7 +58,7 @@ final class PluginProvider implements ProviderInterface
 
         $res = new PluginResource();
         $res->name = $plugin->getName();
-        $res->connector = $parts[0];
+        $res->plugin_name = $parts[0];
         $res->resource = $parts[1] ?? '';
         $res->action = $parts[2] ?? '';
         $res->description = $plugin->getDescription();
@@ -82,7 +84,7 @@ final class PluginProvider implements ProviderInterface
      */
     private function nameFromVars(array $uriVariables): string
     {
-        return ($uriVariables['connector'] ?? '')
+        return ($uriVariables['plugin_name'] ?? '')
             .':'.($uriVariables['resource'] ?? '')
             .':'.($uriVariables['action'] ?? '');
     }

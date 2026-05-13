@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Mosyca\Core\Tests\Gateway;
 
 use ApiPlatform\Metadata\Post;
+use Mosyca\Core\Context\ContextProvider;
+use Mosyca\Core\Context\ExecutionContextInterface;
 use Mosyca\Core\Gateway\Processor\PluginRunProcessor;
 use Mosyca\Core\Ledger\AccessLog;
 use Mosyca\Core\Ledger\PluginLog;
@@ -34,6 +36,10 @@ final class PluginRunProcessorTest extends TestCase
     private ClearanceRegistry $clearanceRegistry;
     /** @var TokenStorageInterface&MockObject */
     private TokenStorageInterface $tokenStorage;
+    /** @var ContextProvider&MockObject */
+    private ContextProvider $contextProvider;
+    /** @var ExecutionContextInterface&MockObject */
+    private ExecutionContextInterface $executionContext;
     private PluginRunProcessor $processor;
 
     protected function setUp(): void
@@ -49,6 +55,14 @@ final class PluginRunProcessorTest extends TestCase
         $this->tokenStorage = $this->createMock(TokenStorageInterface::class);
         $this->tokenStorage->method('getToken')->willReturn(null); // anonymous
 
+        // Mock ContextProvider — tests don't exercise full HTTP context logic here
+        $this->executionContext = $this->createMock(ExecutionContextInterface::class);
+        $this->executionContext->method('getTenantId')->willReturn('default');
+        $this->executionContext->method('isAclBypassed')->willReturn(false);
+
+        $this->contextProvider = $this->createMock(ContextProvider::class);
+        $this->contextProvider->method('create')->willReturn($this->executionContext);
+
         $this->processor = $this->makeProcessor();
     }
 
@@ -61,7 +75,7 @@ final class PluginRunProcessorTest extends TestCase
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'does', 'resource' => 'not', 'action' => 'exist'],
+            uriVariables: ['plugin_name' => 'does', 'tenant' => 'default', 'resource' => 'not', 'action' => 'exist'],
         );
     }
 
@@ -69,11 +83,12 @@ final class PluginRunProcessorTest extends TestCase
     {
         $this->registry->register($this->makePlugin('core:system:ping', PluginResult::ok(['pong' => 'pong'], '✅ pong')));
 
-        $request = Request::create('/api/plugins/core/system/ping/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
+        $request->attributes->set('tenant', 'default');
         $response = $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
 
@@ -89,11 +104,12 @@ final class PluginRunProcessorTest extends TestCase
 
         $this->registry->register($this->makePlugin('core:system:fail', PluginResult::error('Something failed')));
 
-        $request = Request::create('/api/plugins/core/system/fail/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/core/default/system/fail/run', 'POST', content: '{"args":{}}');
+        $request->attributes->set('tenant', 'default');
         $response = $processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'fail'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'fail'],
             context: ['request' => $request],
         );
 
@@ -108,16 +124,17 @@ final class PluginRunProcessorTest extends TestCase
         $plugin->method('getDefaultTemplate')->willReturn(null);
         $plugin->expects(self::once())
             ->method('execute')
-            ->with(['message' => 'hello'])
+            ->with(['message' => 'hello'], self::isInstanceOf(ExecutionContextInterface::class))
             ->willReturn(PluginResult::ok(['message' => 'hello'], 'ok'));
 
         $this->registry->register($plugin);
 
-        $request = Request::create('/api/plugins/core/system/echo/run', 'POST', content: '{"args":{"message":"hello"}}');
+        $request = Request::create('/api/v1/core/default/system/echo/run', 'POST', content: '{"args":{"message":"hello"}}');
+        $request->attributes->set('tenant', 'default');
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'echo'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'echo'],
             context: ['request' => $request],
         );
     }
@@ -134,11 +151,12 @@ final class PluginRunProcessorTest extends TestCase
             ->willReturn('success: true');
         $processor = $this->makeProcessor(renderer: $renderer);
 
-        $request = Request::create('/api/plugins/core/system/ping/run', 'POST', content: '{"args":{},"_format":"yaml"}');
+        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{},"_format":"yaml"}');
+        $request->attributes->set('tenant', 'default');
         $processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
     }
@@ -151,7 +169,7 @@ final class PluginRunProcessorTest extends TestCase
         $response = $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
         );
 
         self::assertInstanceOf(Response::class, $response);
@@ -166,11 +184,12 @@ final class PluginRunProcessorTest extends TestCase
 
         $this->registry->register($this->makePlugin('core:system:ping', PluginResult::ok([], 'pong')));
 
-        $request = Request::create('/api/plugins/core/system/ping/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
+        $request->attributes->set('tenant', 'default');
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
     }
@@ -183,7 +202,7 @@ final class PluginRunProcessorTest extends TestCase
             $this->processor->process(
                 null,
                 new Post(),
-                uriVariables: ['connector' => 'no', 'resource' => 'such', 'action' => 'plugin'],
+                uriVariables: ['plugin_name' => 'no', 'tenant' => 'default', 'resource' => 'such', 'action' => 'plugin'],
             );
         } catch (NotFoundHttpException) {
             // Expected
@@ -198,11 +217,12 @@ final class PluginRunProcessorTest extends TestCase
 
         $this->registry->register($this->makePlugin('core:system:ping', PluginResult::ok([], 'pong')));
 
-        $request = Request::create('/api/plugins/core/system/ping/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
+        $request->attributes->set('tenant', 'default');
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
     }
@@ -216,11 +236,12 @@ final class PluginRunProcessorTest extends TestCase
 
         $this->registry->register($this->makePlugin('core:system:ping', $result));
 
-        $request = Request::create('/api/plugins/core/system/ping/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
+        $request->attributes->set('tenant', 'default');
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
     }
@@ -241,11 +262,12 @@ final class PluginRunProcessorTest extends TestCase
 
         $this->registry->register($scaffold);
 
-        $request = Request::create('/api/plugins/core/scaffold/raw/run', 'POST', content: '{"args":{},"depot":true}');
+        $request = Request::create('/api/v1/core/default/scaffold/raw/run', 'POST', content: '{"args":{},"depot":true}');
+        $request->attributes->set('tenant', 'default');
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['connector' => 'core', 'resource' => 'scaffold', 'action' => 'raw'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'scaffold', 'action' => 'raw'],
             context: ['request' => $request],
         );
 
@@ -300,6 +322,7 @@ final class PluginRunProcessorTest extends TestCase
             accessLog: $this->accessLog,
             pluginLog: $this->pluginLog,
             clearanceRegistry: $this->clearanceRegistry,
+            contextProvider: $this->contextProvider,
             tokenStorage: $this->tokenStorage, // anonymous — returns null token
         );
     }

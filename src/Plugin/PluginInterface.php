@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Plugin;
 
+use Mosyca\Core\Context\ExecutionContextInterface;
+
 /**
  * PluginInterface – The Mosyca Core Contract.
  *
@@ -17,6 +19,16 @@ namespace Mosyca\Core\Plugin;
  *
  * Naming convention: "{connector}:{resource}:{action}"
  *   Examples: "shopware:order:get-margin", "spotify:playlist:add-track"
+ *
+ * REST route pattern: /api/v1/{plugin_name}/{tenant}/{resource}/{action}/run
+ *   Examples: /api/v1/shopware/default/order/get-margin/run
+ *             /api/v1/shopware/shop-berlin/order/get-margin/run
+ *             /api/v1/core/default/system/ping/run
+ *
+ * Stability contract:
+ *   - This interface is FROZEN after V1.0. No new required methods will ever be added.
+ *   - New optional capabilities → new capability interface (e.g. TemplateAwarePluginInterface).
+ *   - Use PluginTrait to automatically get defaults for all optional capability interfaces.
  */
 interface PluginInterface
 {
@@ -122,10 +134,25 @@ interface PluginInterface
      * $args is validated against getParameters() before execute() is called.
      * You can rely on required params being present and correctly typed.
      *
-     * @param array<string, mixed> $args Validated input parameters
+     * $context carries the immutable execution context (tenant, user, ACL bypass flag).
+     * Plugins must NOT import Symfony classes — use only ExecutionContextInterface.
      *
-     * Never throw for business errors — use PluginResult::error() instead.
+     * ACL vector pattern (domain-level authentication):
+     * <code>
+     *     if (!$context->isAclBypassed() && !$this->validatePin($args['pin'] ?? null)) {
+     *         return PluginResult::failure(
+     *             'Access denied. Domain authentication failed.',
+     *             'ERROR_ACL_DENIED',
+     *             'Provide the correct security_pin in the payload.',
+     *         );
+     *     }
+     * </code>
+     *
+     * @param array<string, mixed>      $args    Validated input parameters
+     * @param ExecutionContextInterface $context Immutable execution context
+     *
+     * Never throw for business errors — use PluginResult::failure() instead.
      * Only throw for truly unexpected system errors.
      */
-    public function execute(array $args): PluginResult;
+    public function execute(array $args, ExecutionContextInterface $context): PluginResult;
 }

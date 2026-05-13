@@ -35,6 +35,22 @@ final class PluginResult
         public readonly ?array $ledgerPayload = null,
         /** Ledger level for this payload. Only relevant when ledgerPayload != null. */
         public readonly string $ledgerLevel = 'info',
+        // — ACL / Domain Error — //
+        /**
+         * Machine-readable error code for LLM-deterministic error handling.
+         * Non-null for failure() results; null for ok() and legacy error() results
+         * (though error() now internally sets 'ERROR_LEGACY').
+         *
+         * Standard codes: 'ERROR_ACL_DENIED', 'ERROR_INVALID_PIN', 'ERROR_LEGACY', etc.
+         */
+        public readonly ?string $errorCode = null,
+        /**
+         * Actionable correction hint for LLM agents.
+         * Tells Claude what to do next when this error is received.
+         *
+         * Example: 'Provide the correct security_pin in the payload field "pin".'
+         */
+        public readonly ?string $correctionHint = null,
     ) {
     }
 
@@ -56,18 +72,55 @@ final class PluginResult
     }
 
     /**
-     * Error result.
+     * Structured failure result — the mandatory pattern for ACL denials and domain errors.
      *
-     * Use for business logic errors — never throw exceptions for expected cases.
+     * LLM agents (Claude) can react deterministically to errorCode without parsing
+     * the human-readable message. correctionHint gives Claude an explicit action hint.
+     *
+     * Domain ACL vector pattern:
+     * <code>
+     *     if (!$context->isAclBypassed() && !$this->validatePin($args['pin'] ?? null)) {
+     *         return PluginResult::failure(
+     *             'Access denied. Domain authentication failed.',
+     *             'ERROR_ACL_DENIED',
+     *             'Provide the correct security_pin in the payload.',
+     *         );
+     *     }
+     * </code>
+     *
+     * @param array<string, mixed> $context Additional error context (no PII)
+     */
+    public static function failure(
+        string $message,
+        string $errorCode,
+        string $correctionHint,
+        array $context = [],
+    ): self {
+        return new self(
+            success: false,
+            data: $context,
+            summary: $message,
+            errorCode: $errorCode,
+            correctionHint: $correctionHint,
+        );
+    }
+
+    /**
+     * Legacy error result.
+     *
+     * @deprecated Use PluginResult::failure() with errorCode and correctionHint.
+     *             failure() enables LLM-deterministic error handling and is required
+     *             for ACL denials and domain errors.
      *
      * @param array<string, mixed> $context
      */
     public static function error(string $message, array $context = []): self
     {
-        return new self(
-            success: false,
-            data: $context,
-            summary: $message,
+        return self::failure(
+            message: $message,
+            errorCode: 'ERROR_LEGACY',
+            correctionHint: 'Use PluginResult::failure() with errorCode and correctionHint.',
+            context: $context,
         );
     }
 
@@ -90,6 +143,8 @@ final class PluginResult
             depotTtl: $ttl,
             ledgerPayload: $this->ledgerPayload,
             ledgerLevel: $this->ledgerLevel,
+            errorCode: $this->errorCode,
+            correctionHint: $this->correctionHint,
         );
     }
 
@@ -111,6 +166,8 @@ final class PluginResult
             depotTtl: $this->depotTtl,
             ledgerPayload: $this->ledgerPayload,
             ledgerLevel: $this->ledgerLevel,
+            errorCode: $this->errorCode,
+            correctionHint: $this->correctionHint,
         );
     }
 
@@ -135,6 +192,8 @@ final class PluginResult
             depotTtl: $this->depotTtl,
             ledgerPayload: $payload,
             ledgerLevel: $level,
+            errorCode: $this->errorCode,
+            correctionHint: $this->correctionHint,
         );
     }
 
@@ -156,6 +215,8 @@ final class PluginResult
             depotTtl: $this->depotTtl,
             ledgerPayload: $this->ledgerPayload,
             ledgerLevel: $this->ledgerLevel,
+            errorCode: $this->errorCode,
+            correctionHint: $this->correctionHint,
         );
     }
 
@@ -177,6 +238,8 @@ final class PluginResult
             depotTtl: $this->depotTtl,
             ledgerPayload: $this->ledgerPayload,
             ledgerLevel: $this->ledgerLevel,
+            errorCode: $this->errorCode,
+            correctionHint: $this->correctionHint,
         );
     }
 

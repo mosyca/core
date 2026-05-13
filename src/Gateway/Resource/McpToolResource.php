@@ -13,7 +13,11 @@ use Mosyca\Core\Gateway\Provider\McpToolProvider;
  * MCP Tool Resource — simplified endpoint optimised for Bridge consumption.
  *
  * Routes:
- *   GET /api/mcp/tools   → list_tools MCP-formatted response
+ *   GET /api/v1/mcp/tools   → list_tools MCP-formatted response (global discovery)
+ *
+ * Discovery is GLOBAL — Claude Desktop requests ALL tools at once, not per plugin.
+ * No {plugin_name} in this route. Tenant selection happens dynamically via tool
+ * call payload at execution time (not at discovery time).
  *
  * The tool name uses underscores instead of colons/hyphens so it is a valid
  * MCP tool identifier: core:system:ping → core_system_ping.
@@ -23,8 +27,8 @@ use Mosyca\Core\Gateway\Provider\McpToolProvider;
     description: 'MCP Tool list – plugins formatted for Claude MCP list_tools.',
     operations: [
         new GetCollection(
-            uriTemplate: '/mcp/tools',
-            description: 'List all plugins as MCP tools (list_tools format).',
+            uriTemplate: '/v1/mcp/tools',
+            description: 'List all plugins as MCP tools (global list_tools format).',
             provider: McpToolProvider::class,
         ),
     ],

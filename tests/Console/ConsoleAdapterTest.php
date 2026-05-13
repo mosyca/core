@@ -6,6 +6,7 @@ namespace Mosyca\Core\Tests\Console;
 
 use Mosyca\Core\Console\ConsoleAdapter;
 use Mosyca\Core\Console\PluginCommand;
+use Mosyca\Core\Context\ContextProvider;
 use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Plugin\PluginRegistry;
 use Mosyca\Core\Plugin\PluginResult;
@@ -22,7 +23,8 @@ final class ConsoleAdapterTest extends TestCase
     {
         $this->registry = new PluginRegistry();
         $renderer = $this->createMock(OutputRendererInterface::class);
-        $this->adapter = new ConsoleAdapter($this->registry, $renderer);
+        $contextProvider = $this->createMock(ContextProvider::class);
+        $this->adapter = new ConsoleAdapter($this->registry, $renderer, $contextProvider);
     }
 
     public function testGetNamesReturnsRegisteredPluginNames(): void

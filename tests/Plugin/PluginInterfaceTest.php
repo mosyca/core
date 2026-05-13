@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Tests\Plugin;
 
+use Mosyca\Core\Context\ExecutionContextInterface;
 use Mosyca\Core\Plugin\Builtin\PingPlugin;
 use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Plugin\PluginResult;
@@ -12,10 +13,14 @@ use PHPUnit\Framework\TestCase;
 final class PluginInterfaceTest extends TestCase
 {
     private PingPlugin $plugin;
+    private ExecutionContextInterface $context;
 
     protected function setUp(): void
     {
         $this->plugin = new PingPlugin();
+        $this->context = $this->createMock(ExecutionContextInterface::class);
+        $this->context->method('getTenantId')->willReturn('default');
+        $this->context->method('isAclBypassed')->willReturn(false);
     }
 
     public function testImplementsInterface(): void
@@ -76,14 +81,14 @@ final class PluginInterfaceTest extends TestCase
 
     public function testExecuteReturnsPluginResult(): void
     {
-        $result = $this->plugin->execute([]);
+        $result = $this->plugin->execute([], $this->context);
 
         self::assertInstanceOf(PluginResult::class, $result);
     }
 
     public function testExecuteSucceeds(): void
     {
-        $result = $this->plugin->execute([]);
+        $result = $this->plugin->execute([], $this->context);
 
         self::assertTrue($result->success);
         self::assertSame('✅ pong', $result->summary);
@@ -91,7 +96,7 @@ final class PluginInterfaceTest extends TestCase
 
     public function testExecuteEchosMessage(): void
     {
-        $result = $this->plugin->execute(['message' => 'hello']);
+        $result = $this->plugin->execute(['message' => 'hello'], $this->context);
 
         self::assertTrue($result->success);
         self::assertIsArray($result->data);
@@ -100,7 +105,7 @@ final class PluginInterfaceTest extends TestCase
 
     public function testExecuteWithoutMessageEchosNull(): void
     {
-        $result = $this->plugin->execute([]);
+        $result = $this->plugin->execute([], $this->context);
 
         self::assertIsArray($result->data);
         self::assertNull($result->data['echo']);

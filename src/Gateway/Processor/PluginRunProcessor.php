@@ -6,6 +6,7 @@ namespace Mosyca\Core\Gateway\Processor;
 
 use ApiPlatform\Metadata\Operation;
 use ApiPlatform\State\ProcessorInterface;
+use Mosyca\Core\Context\ContextProvider;
 use Mosyca\Core\Depot\DepotInterface;
 use Mosyca\Core\Ledger\AccessLog;
 use Mosyca\Core\Ledger\PluginLog;
@@ -24,10 +25,18 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
 
 /**
- * API Platform state processor for POST /api/plugins/{connector}/{resource}/{action}/run.
+ * API Platform state processor for POST /api/v1/{plugin_name}/{tenant}/{resource}/{action}/run.
  *
  * Executes the named plugin with the args from the request body and returns a
  * JSON response rendered via OutputRenderer.
+ *
+ * Route variables (V0.9+):
+ *   plugin_name  → first segment (was: connector)
+ *   tenant       → tenant identifier (new — was absent)
+ *   resource     → second segment
+ *   action       → third segment
+ *
+ * Internal plugin name: {plugin_name}:{resource}:{action}
  *
  * V0.8 additions:
  *   - Generates request_id (UUID v4) per call
@@ -35,6 +44,11 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
  *   - Depot: write on depotEligible=true AND call.depot=true AND !isScaffold
  *   - Scaffold guard: always strips depot eligibility
  *   - Plugin Log: written when ledgerPayload != null AND operator logLevel allows
+ *
+ * V0.9 additions:
+ *   - ExecutionContext built by ContextProvider from HTTP request + Symfony Security
+ *   - $context passed to plugin->execute() as second argument
+ *   - tenant_id added to AccessLog entry
  *
  * @implements ProcessorInterface<null, Response>
  */
@@ -46,6 +60,7 @@ final class PluginRunProcessor implements ProcessorInterface
         private readonly AccessLog $accessLog,
         private readonly PluginLog $pluginLog,
         private readonly ClearanceRegistry $clearanceRegistry,
+        private readonly ContextProvider $contextProvider,
         private readonly ?TokenStorageInterface $tokenStorage = null,
         private readonly ?PluginAccessChecker $accessChecker = null,
         private readonly ?DepotInterface $depot = null,
@@ -57,10 +72,12 @@ final class PluginRunProcessor implements ProcessorInterface
         $requestId = self::generateRequestId();
         $startMs = (int) (microtime(true) * 1000);
 
-        $connector = (string) ($uriVariables['connector'] ?? '');
+        // V0.9: plugin_name replaces connector; tenant is now a dedicated URI variable
+        $pluginName = (string) ($uriVariables['plugin_name'] ?? '');
+        $tenant = (string) ($uriVariables['tenant'] ?? '');
         $resource = (string) ($uriVariables['resource'] ?? '');
         $action = (string) ($uriVariables['action'] ?? '');
-        $pluginName = $connector.':'.$resource.':'.$action;
+        $internalName = $pluginName.':'.$resource.':'.$action;
 
         $errorCode = null;
         $httpStatus = Response::HTTP_OK;
@@ -69,11 +86,11 @@ final class PluginRunProcessor implements ProcessorInterface
         $response = null;
 
         try {
-            if (!$this->registry->has($pluginName)) {
-                throw new NotFoundHttpException(\sprintf("Plugin '%s' not found.", $pluginName));
+            if (!$this->registry->has($internalName)) {
+                throw new NotFoundHttpException(\sprintf("Plugin '%s' not found.", $internalName));
             }
 
-            $plugin = $this->registry->get($pluginName);
+            $plugin = $this->registry->get($internalName);
 
             // V0.7: ACL check — null when Vault is not configured (dev / no-auth mode)
             $this->accessChecker?->assertCanRun($plugin);
@@ -113,7 +130,7 @@ final class PluginRunProcessor implements ProcessorInterface
 
             if ($callWantsDepot && null !== $this->depot) {
                 $operatorName = $this->currentOperator()?->getUsername() ?? 'anonymous';
-                $depotKey = $this->depot->buildKey($operatorName, $connector, $pluginName, $args);
+                $depotKey = $this->depot->buildKey($operatorName, $pluginName, $internalName, $args);
                 $cached = $this->depot->get($depotKey);
 
                 if (null !== $cached) {
@@ -131,8 +148,11 @@ final class PluginRunProcessor implements ProcessorInterface
                 }
             }
 
-            // — Execute plugin —
-            $result = $plugin->execute($args);
+            // — V0.9: Build ExecutionContext from HTTP request + Symfony Security —
+            $executionContext = $this->contextProvider->create();
+
+            // — Execute plugin (with context) —
+            $result = $plugin->execute($args, $executionContext);
 
             // — V0.8: Scaffold guard — permanently strip depot eligibility —
             if ($plugin instanceof ScaffoldPluginInterface) {
@@ -152,7 +172,7 @@ final class PluginRunProcessor implements ProcessorInterface
 
             $httpStatus = $result->success ? Response::HTTP_OK : Response::HTTP_UNPROCESSABLE_ENTITY;
             if (!$result->success) {
-                $errorCode = 'plugin_error';
+                $errorCode = $result->errorCode ?? 'plugin_error';
             }
 
             $rendered = $this->renderer->render($result, $format, $template);
@@ -182,8 +202,8 @@ final class PluginRunProcessor implements ProcessorInterface
             $durationMs = (int) (microtime(true) * 1000) - $startMs;
             $this->writeAccessLog(
                 requestId: $requestId,
-                connector: $connector,
-                pluginName: $pluginName,
+                pluginName: $internalName,
+                tenantId: $tenant,
                 durationMs: $durationMs,
                 success: null !== $result && $result->success,
                 errorCode: $errorCode,
@@ -193,7 +213,7 @@ final class PluginRunProcessor implements ProcessorInterface
 
         // — V0.8: Plugin Log — opt-in, written after response built —
         if (null !== $result->ledgerPayload) {
-            $this->writePluginLog($requestId, $pluginName, $result);
+            $this->writePluginLog($requestId, $internalName, $result);
         }
 
         return $response;
@@ -201,8 +221,8 @@ final class PluginRunProcessor implements ProcessorInterface
 
     private function writeAccessLog(
         string $requestId,
-        string $connector,
         string $pluginName,
+        string $tenantId,
         int $durationMs,
         bool $success,
         ?string $errorCode,
@@ -215,7 +235,7 @@ final class PluginRunProcessor implements ProcessorInterface
             'request_id' => $requestId,
             'operator' => $operator?->getUsername() ?? 'anonymous',
             'clearance' => $operator?->getClearance() ?? 'none',
-            'connector' => $connector,
+            'tenant_id' => $tenantId,
             'plugin' => $pluginName,
             'duration_ms' => $durationMs,
             'success' => $success,

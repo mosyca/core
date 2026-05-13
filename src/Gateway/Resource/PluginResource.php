@@ -20,29 +20,42 @@ use Mosyca\Core\Gateway\Provider\PluginProvider;
  *
  * Plugin names follow the {connector}:{resource}:{action} convention.
  * The three segments are mapped to separate URL path segments to produce
- * clean, encoding-free URIs:
+ * clean, encoding-free URIs.
  *
- * Routes:
- *   GET  /api/plugins                                  → list all plugins
- *   GET  /api/plugins/{connector}/{resource}/{action}  → plugin detail + parameter schema
- *   POST /api/plugins/{connector}/{resource}/{action}/run → execute plugin
+ * Route pattern (V0.9+, ADR 1.5 compliant):
+ *   GET  /api/v1/plugins                                              → list all plugins
+ *   GET  /api/v1/{plugin_name}/{tenant}/{resource}/{action}           → plugin detail
+ *   POST /api/v1/{plugin_name}/{tenant}/{resource}/{action}/run       → execute plugin
+ *
+ * Examples:
+ *   POST /api/v1/core/default/system/ping/run           ← built-in, default tenant
+ *   POST /api/v1/shopware/default/order/get-margin/run  ← shopware, single-tenant
+ *   POST /api/v1/shopware/shop-berlin/order/get-margin/run ← shopware, multi-tenant
+ *
+ * URI variables:
+ *   plugin_name  → first segment of the plugin identifier (e.g. core, shopware)
+ *   tenant       → tenant identifier (e.g. default, shop-berlin)
+ *   resource     → second segment (e.g. system, order)
+ *   action       → third segment (e.g. ping, get-margin)
+ *
+ * Internal plugin name: {plugin_name}:{resource}:{action}
  */
 #[ApiResource(
     shortName: 'Plugin',
     description: 'Mosyca Plugins – executable capabilities.',
     operations: [
         new GetCollection(
-            uriTemplate: '/plugins',
+            uriTemplate: '/v1/plugins',
             description: 'List all registered plugins.',
             provider: PluginProvider::class,
         ),
         new Get(
-            uriTemplate: '/plugins/{connector}/{resource}/{action}',
+            uriTemplate: '/v1/{plugin_name}/{tenant}/{resource}/{action}',
             description: 'Get plugin metadata and parameter schema.',
             provider: PluginProvider::class,
         ),
         new Post(
-            uriTemplate: '/plugins/{connector}/{resource}/{action}/run',
+            uriTemplate: '/v1/{plugin_name}/{tenant}/{resource}/{action}/run',
             description: 'Execute a plugin. Body: {"args":{...},"_format":"json","_template":null}.',
             input: false,
             output: false,
@@ -55,15 +68,23 @@ use Mosyca\Core\Gateway\Provider\PluginProvider;
 final class PluginResource
 {
     /**
-     * Connector segment of the plugin name (first part of connector:resource:action).
+     * Plugin name segment (first part of plugin_name:resource:action).
      *
      * Example: core, shopware, spotify
      */
-    #[ApiProperty(identifier: true, description: 'Connector segment (e.g. core, shopware).')]
-    public string $connector = '';
+    #[ApiProperty(identifier: true, description: 'Plugin name segment (e.g. core, shopware).')]
+    public string $plugin_name = '';
 
     /**
-     * Resource segment of the plugin name (second part of connector:resource:action).
+     * Tenant identifier.
+     *
+     * Example: default, shop-berlin, shop-munich
+     */
+    #[ApiProperty(identifier: true, description: 'Tenant identifier (e.g. default, shop-berlin).')]
+    public string $tenant = '';
+
+    /**
+     * Resource segment of the plugin name (second part of plugin_name:resource:action).
      *
      * Example: system, order, product
      */
@@ -71,7 +92,7 @@ final class PluginResource
     public string $resource = '';
 
     /**
-     * Action segment of the plugin name (third part of connector:resource:action).
+     * Action segment of the plugin name (third part of plugin_name:resource:action).
      *
      * Example: ping, get-margin, list
      */
@@ -83,7 +104,7 @@ final class PluginResource
      *
      * Example: core:system:ping
      */
-    #[ApiProperty(identifier: false, description: 'Full plugin name (connector:resource:action).')]
+    #[ApiProperty(identifier: false, description: 'Full plugin name (plugin_name:resource:action).')]
     public string $name = '';
 
     #[ApiProperty(description: 'One-line description shown in Swagger UI and MCP list_tools.')]

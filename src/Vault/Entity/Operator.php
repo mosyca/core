@@ -94,9 +94,29 @@ class Operator implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->username;
     }
 
+    /**
+     * Derives Symfony roles from the operator's clearance level (GBAC).
+     *
+     * ROLE_ADMIN   → technical rights (plugin/operator management). No data bypass.
+     * ROLE_MANAGER → data access bypass (isAclBypassed=true). No admin rights.
+     *
+     * This separation is deliberate:
+     *   - Support staff need data access (ROLE_MANAGER) but must not manage the system.
+     *   - Admins manage the system but must not bypass data governance.
+     *   - Only superadmin and dev get both roles.
+     *
+     * @return string[]
+     */
     public function getRoles(): array
     {
-        return ['ROLE_MOSYCA_OPERATOR'];
+        $roles = ['ROLE_USER'];
+
+        return match ($this->clearance) {
+            'superadmin', 'dev' => [...$roles, 'ROLE_ADMIN', 'ROLE_MANAGER'],
+            'admin' => [...$roles, 'ROLE_ADMIN'],
+            'data_manager' => [...$roles, 'ROLE_MANAGER'],
+            default => $roles,
+        };
     }
 
     public function getPassword(): string

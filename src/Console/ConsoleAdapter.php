@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Console;
 
+use Mosyca\Core\Context\ContextProvider;
 use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Plugin\PluginRegistry;
 use Mosyca\Core\Renderer\OutputRendererInterface;
@@ -23,6 +24,7 @@ final class ConsoleAdapter implements CommandLoaderInterface
     public function __construct(
         private readonly PluginRegistry $registry,
         private readonly OutputRendererInterface $renderer,
+        private readonly ContextProvider $contextProvider,
     ) {
     }
 
@@ -48,6 +50,6 @@ final class ConsoleAdapter implements CommandLoaderInterface
 
     public function buildCommand(PluginInterface $plugin): Command
     {
-        return new PluginCommand($plugin, $this->renderer);
+        return new PluginCommand($plugin, $this->renderer, $this->contextProvider);
     }
 }

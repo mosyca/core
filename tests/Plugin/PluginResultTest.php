@@ -208,4 +208,93 @@ final class PluginResultTest extends TestCase
         self::assertFalse($guarded->depotEligible);
         self::assertSame(['pii' => 'data'], $guarded->data); // data unchanged
     }
+
+    // ── AC 6: PluginResult::failure() ────────────────────────────────────────
+
+    /**
+     * AC 6: failure() must return errorCode non-null.
+     */
+    public function testFailureReturnsNonNullErrorCode(): void
+    {
+        $result = PluginResult::failure(
+            'Access denied.',
+            'ERROR_ACL_DENIED',
+            'Provide the correct security_pin.',
+        );
+
+        self::assertNotNull($result->errorCode);
+        self::assertSame('ERROR_ACL_DENIED', $result->errorCode);
+    }
+
+    /**
+     * AC 6: failure() must return correctionHint non-null.
+     */
+    public function testFailureReturnsNonNullCorrectionHint(): void
+    {
+        $result = PluginResult::failure(
+            'Access denied.',
+            'ERROR_ACL_DENIED',
+            'Provide the correct security_pin.',
+        );
+
+        self::assertNotNull($result->correctionHint);
+        self::assertSame('Provide the correct security_pin.', $result->correctionHint);
+    }
+
+    public function testFailureIsNotSuccess(): void
+    {
+        $result = PluginResult::failure(
+            'Something failed.',
+            'ERROR_DOMAIN',
+            'Check your input.',
+        );
+
+        self::assertFalse($result->success);
+        self::assertSame('Something failed.', $result->summary);
+    }
+
+    public function testFailureAcceptsContextArray(): void
+    {
+        $result = PluginResult::failure(
+            'Invalid PIN.',
+            'ERROR_INVALID_PIN',
+            'Provide valid security_pin in payload field "pin".',
+            ['attempts_left' => 2],
+        );
+
+        self::assertSame(['attempts_left' => 2], $result->data);
+    }
+
+    public function testFailureWithEmptyContextDefaultsToEmptyArray(): void
+    {
+        $result = PluginResult::failure(
+            'Denied.',
+            'ERROR_ACL_DENIED',
+            'Contact administrator.',
+        );
+
+        self::assertIsArray($result->data);
+        self::assertEmpty($result->data);
+    }
+
+    /**
+     * Backward-compat: legacy error() must still return a result with success=false.
+     */
+    public function testErrorBackwardCompatStillWorks(): void
+    {
+        $result = PluginResult::error('Something went wrong', ['code' => 404]);
+
+        self::assertFalse($result->success);
+        self::assertSame('Something went wrong', $result->summary);
+    }
+
+    /**
+     * error() delegates to failure() internally — errorCode is 'ERROR_LEGACY'.
+     */
+    public function testErrorSetsErrorLegacyCode(): void
+    {
+        $result = PluginResult::error('Oops');
+
+        self::assertSame('ERROR_LEGACY', $result->errorCode);
+    }
 }

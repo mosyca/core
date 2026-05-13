@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mosyca\Core\Console;
 
+use Mosyca\Core\Context\ContextProvider;
 use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Renderer\OutputRendererInterface;
 use Symfony\Component\Console\Command\Command;
@@ -22,6 +23,7 @@ final class PluginCommand extends Command
     public function __construct(
         private readonly PluginInterface $plugin,
         private readonly OutputRendererInterface $renderer,
+        private readonly ContextProvider $contextProvider,
     ) {
         parent::__construct($plugin->getName());
     }
@@ -83,7 +85,8 @@ final class PluginCommand extends Command
                 ? $templateOpt
                 : $this->plugin->getDefaultTemplate());
 
-        $result = $this->plugin->execute($args);
+        $context = $this->contextProvider->createForCli();
+        $result = $this->plugin->execute($args, $context);
         $output->writeln($this->renderer->render($result, $format, $template));
 
         return $result->success ? Command::SUCCESS : Command::FAILURE;

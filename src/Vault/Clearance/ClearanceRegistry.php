@@ -85,6 +85,15 @@ final class ClearanceRegistry
                 allowMutating: true,
                 logLevel: 'debug',
             ),
+            // GBAC: data bypass without admin rights.
+            // Grants ROLE_MANAGER → isAclBypassed=true in ContextProvider.
+            // Does NOT grant ROLE_ADMIN — data_manager cannot manage operators/clearances.
+            'data_manager' => new ClearanceDefinition(
+                name: 'data_manager',
+                allowMutating: false,
+                allowPatterns: ['*'],
+                logLevel: 'info',
+            ),
         ];
     }
 

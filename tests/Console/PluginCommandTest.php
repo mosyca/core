@@ -5,15 +5,31 @@ declare(strict_types=1);
 namespace Mosyca\Core\Tests\Console;
 
 use Mosyca\Core\Console\PluginCommand;
+use Mosyca\Core\Context\ContextProvider;
+use Mosyca\Core\Context\ExecutionContextInterface;
 use Mosyca\Core\Plugin\PluginInterface;
 use Mosyca\Core\Plugin\PluginResult;
 use Mosyca\Core\Renderer\OutputRendererInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
 final class PluginCommandTest extends TestCase
 {
+    /** @var ContextProvider&MockObject */
+    private ContextProvider $contextProvider;
+
+    protected function setUp(): void
+    {
+        $executionContext = $this->createMock(ExecutionContextInterface::class);
+        $executionContext->method('isAclBypassed')->willReturn(false);
+        $executionContext->method('getTenantId')->willReturn('default');
+
+        $this->contextProvider = $this->createMock(ContextProvider::class);
+        $this->contextProvider->method('createForCli')->willReturn($executionContext);
+    }
+
     public function testCommandNameMatchesPlugin(): void
     {
         $command = $this->buildCommand($this->stubPlugin('core:system:ping'));
@@ -127,7 +143,7 @@ final class PluginCommandTest extends TestCase
         $plugin->method('getDefaultTemplate')->willReturn(null);
         $plugin->expects(self::once())
             ->method('execute')
-            ->with(['limit' => 42])
+            ->with(['limit' => 42], self::isInstanceOf(ExecutionContextInterface::class))
             ->willReturn($result);
 
         $renderer = $this->createMock(OutputRendererInterface::class);
@@ -154,7 +170,7 @@ final class PluginCommandTest extends TestCase
         $plugin->method('getDefaultTemplate')->willReturn(null);
         $plugin->expects(self::once())
             ->method('execute')
-            ->with(['active' => true])
+            ->with(['active' => true], self::isInstanceOf(ExecutionContextInterface::class))
             ->willReturn($result);
 
         $renderer = $this->createMock(OutputRendererInterface::class);
@@ -179,11 +195,43 @@ final class PluginCommandTest extends TestCase
         self::assertSame(Command::SUCCESS, $exitCode);
     }
 
+    /**
+     * CLI must pass ExecutionContext to execute() — context is built by ContextProvider::createForCli().
+     */
+    public function testExecutePassesContextToPlugin(): void
+    {
+        $result = PluginResult::ok([], 'ok');
+        $plugin = $this->createMock(PluginInterface::class);
+        $plugin->method('getName')->willReturn('core:system:ping');
+        $plugin->method('getDescription')->willReturn('Ping');
+        $plugin->method('getUsage')->willReturn('Ping');
+        $plugin->method('getParameters')->willReturn([]);
+        $plugin->method('getRequiredScopes')->willReturn([]);
+        $plugin->method('getTags')->willReturn([]);
+        $plugin->method('isMutating')->willReturn(false);
+        $plugin->method('getDefaultFormat')->willReturn('json');
+        $plugin->method('getDefaultTemplate')->willReturn(null);
+        $plugin->expects(self::once())
+            ->method('execute')
+            ->with([], self::isInstanceOf(ExecutionContextInterface::class))
+            ->willReturn($result);
+
+        $renderer = $this->createMock(OutputRendererInterface::class);
+        $renderer->method('render')->willReturn('ok');
+
+        $tester = new CommandTester($this->buildCommand($plugin, $renderer));
+        $tester->execute([]);
+    }
+
     // -------------------------------------------------------------------------
 
     private function buildCommand(PluginInterface $plugin, ?OutputRendererInterface $renderer = null): PluginCommand
     {
-        return new PluginCommand($plugin, $renderer ?? $this->createMock(OutputRendererInterface::class));
+        return new PluginCommand(
+            $plugin,
+            $renderer ?? $this->createMock(OutputRendererInterface::class),
+            $this->contextProvider,
+        );
     }
 
     /**

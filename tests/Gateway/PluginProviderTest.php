@@ -79,12 +79,12 @@ final class PluginProviderTest extends TestCase
 
         $result = $this->provider->provide(
             new Get(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
         );
 
         self::assertInstanceOf(PluginResource::class, $result);
         self::assertSame('core:system:ping', $result->name);
-        self::assertSame('core', $result->connector);
+        self::assertSame('core', $result->plugin_name);
         self::assertSame('system', $result->resource);
         self::assertSame('ping', $result->action);
     }
@@ -93,7 +93,7 @@ final class PluginProviderTest extends TestCase
     {
         $result = $this->provider->provide(
             new Get(),
-            uriVariables: ['connector' => 'does', 'resource' => 'not', 'action' => 'exist'],
+            uriVariables: ['plugin_name' => 'does', 'tenant' => 'default', 'resource' => 'not', 'action' => 'exist'],
         );
 
         self::assertNull($result);
@@ -108,7 +108,7 @@ final class PluginProviderTest extends TestCase
 
         $result = $this->provider->provide(
             new Get(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
         );
 
         self::assertInstanceOf(PluginResource::class, $result);
@@ -135,7 +135,7 @@ final class PluginProviderTest extends TestCase
         $results = $this->provider->provide(new GetCollection());
 
         self::assertIsArray($results);
-        self::assertSame('shopware', $results[0]->connector);
+        self::assertSame('shopware', $results[0]->plugin_name);
         self::assertSame('order', $results[0]->resource);
         self::assertSame('get-margin', $results[0]->action);
     }
@@ -150,7 +150,7 @@ final class PluginProviderTest extends TestCase
 
         $result = $this->provider->provide(
             new Get(),
-            uriVariables: ['connector' => 'core', 'resource' => 'system', 'action' => 'test'],
+            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'test'],
         );
 
         self::assertInstanceOf(PluginResource::class, $result);

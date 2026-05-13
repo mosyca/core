@@ -17,7 +17,7 @@ namespace Mosyca\Core\Ledger;
  *   request_id  UUID v4 — correlates with Plugin Log
  *   operator    Operator username
  *   clearance   Clearance level at time of call
- *   connector   e.g. "shopware", "core"
+ *   tenant_id   Tenant identifier (V0.9+, null for legacy entries)
  *   plugin      Full plugin name e.g. "shopware:order:get-revenue"
  *   duration_ms Wall time from dispatch to result
  *   success     bool
@@ -49,7 +49,7 @@ class AccessLog
      *   request_id: string,
      *   operator: string,
      *   clearance: string,
-     *   connector: string,
+     *   tenant_id: string,
      *   plugin: string,
      *   duration_ms: int,
      *   success: bool,

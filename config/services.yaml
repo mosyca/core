@@ -34,6 +34,16 @@ services:
     Mosyca\Core\Console\Command\PluginListCommand: ~
     Mosyca\Core\Console\Command\PluginShowCommand: ~
 
+    # — V0.9: ExecutionContext —
+    # ContextProvider is the only component that knows HTTP + Symfony Security.
+    # It bridges HTTP/MCP/CLI transports into a uniform ExecutionContextInterface
+    # for plugins. Always registered (no DoctrineBundle dependency).
+    # Security services are optional (null when SecurityBundle is not loaded).
+    Mosyca\Core\Context\ContextProvider:
+        arguments:
+            $tokenStorage: '@?security.token_storage'
+            $authorizationChecker: '@?security.authorization_checker'
+
     # Gateway — API Platform providers and processors.
     # Registered explicitly so the bundle works without a wildcard resource scan.
     Mosyca\Core\Gateway\Provider\PluginProvider: ~
