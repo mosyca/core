@@ -34,6 +34,12 @@ services:
     Mosyca\Core\Console\Command\ActionListCommand: ~
     Mosyca\Core\Console\Command\ActionShowCommand: ~
 
+    # — V0.10b: Scaffold from OpenAPI —
+    Mosyca\Core\Scaffold\ParameterConstraintMapper: ~
+    Mosyca\Core\Scaffold\OpenApiSpecLoader: ~
+    Mosyca\Core\Scaffold\ActionStubWriter: ~
+    Mosyca\Core\Console\Command\ScaffoldFromOpenApiCommand: ~
+
     # — V0.9: ExecutionContext —
     # ContextProvider is the only component that knows HTTP + Symfony Security.
     # It bridges HTTP/MCP/CLI transports into a uniform ExecutionContextInterface
