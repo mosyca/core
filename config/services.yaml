@@ -41,6 +41,12 @@ services:
     Mosyca\Core\Resource\ResourceRegistry:
         public: true
 
+    # Built-in actions (must be registered so ActionRegistrationPass tags and wires them
+    # into ActionRegistry via the mosyca.action tag; auto-tagging via registerForAutoconfiguration
+    # only takes effect once the service exists in the container).
+    Mosyca\Core\Action\Builtin\PingAction: ~
+    Mosyca\Core\Action\Builtin\EchoAction: ~
+
     # Built-in system resource (core:system — ping + echo).
     Mosyca\Core\Action\Builtin\Resource\SystemResource: ~
 
@@ -112,6 +118,11 @@ services:
     Mosyca\Core\Bridge\ConstraintSchemaTranslator: ~
     Mosyca\Core\Bridge\McpDiscoveryService: ~
     Mosyca\Core\Bridge\McpExecutionService: ~
+
+    # — V0.13b: MCP HTTP Endpoint (JSON-RPC 2.0) —
+    # Single POST /api/v1/mcp/rpc controller wrapping the V0.13 Bridge services.
+    # No API Platform, no AbstractController — pure Symfony #[Route] controller.
+    Mosyca\Core\Bridge\Controller\McpRpcController: ~
 
     # — V0.8: Ledger REST controller —
     Mosyca\Core\Ledger\Controller\LedgerController:

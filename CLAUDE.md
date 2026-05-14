@@ -27,7 +27,7 @@ PHP library. Namespace `Mosyca\Core\`. Symfony 7.1+ bundle.
 
 ---
 
-## Current Structure (V0.10)
+## Current Structure (V0.13b)
 
 ```
 src/
@@ -81,6 +81,13 @@ src/
       McpToolProvider.php           ← MCP list_tools format
     Processor/
       ActionRunProcessor.php        ← POST /api/v1/.../run → JsonResponse
+
+  Bridge/
+    ConstraintSchemaTranslator.php  ← getParameters() → JSON Schema Draft-07
+    McpDiscoveryService.php         ← list_tools via ResourceRegistry (ADR 3.1, 3.2, 3.4)
+    McpExecutionService.php         ← call_tool (tenant extraction, execute, toArray)
+    Controller/
+      McpRpcController.php          ← POST /api/v1/mcp/rpc — JSON-RPC 2.0 entry point
 
   Context/
     ExecutionContextInterface.php
@@ -212,6 +219,16 @@ V0.8  Depot (TTL cache), ActionLog (structured ledger), ScaffoldActionInterface
 V0.9  ACL architecture: ExecutionContextInterface, ContextProvider,
       ActionResult::failure(), new route /api/v1/{plugin_name}/{tenant}/{resource}/{action}
 V0.10 Nomenclature correction: Plugin→Action rename (pure rename, no behaviour change)
+V0.11 True-REST Gateway via ResourceMetadataFactory decorator (AbstractResource,
+      ResourceRegistry, ResourceRegistrationPass, SystemResource, MosycaResource,
+      ResourceStateProvider/Processor stub, services.yaml wiring)
+V0.12 Execution Adapters (ResourceStateProvider + ResourceStateProcessor fully
+      implemented, ActionRegistry::getByClass())
+V0.13 MCP Bridge PHP-native: ConstraintSchemaTranslator, McpDiscoveryService,
+      McpExecutionService — direct ResourceRegistry + ActionRegistry access,
+      no REST/API Platform (ADR 3.1), flat tool names (ADR 3.2), tenant injection (ADR 3.4)
+V0.13b MCP HTTP Endpoint: McpRpcController — JSON-RPC 2.0 at POST /api/v1/mcp/rpc,
+      wraps Discovery + Execution services, no AbstractController, no API Platform
 ```
 
 ---
