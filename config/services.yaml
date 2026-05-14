@@ -105,6 +105,14 @@ services:
     # — V0.8: Depot REST controller —
     Mosyca\Core\Depot\Controller\DepotController: ~
 
+    # — V0.13: MCP Bridge PHP-Native (direct registry access, no REST layer) —
+    # These services provide list_tools (discovery) and call_tool (execution) without
+    # going through API Platform or HTTP routing (ADR 3.1). Autowired from the public
+    # ActionRegistry and ResourceRegistry already declared above.
+    Mosyca\Core\Bridge\ConstraintSchemaTranslator: ~
+    Mosyca\Core\Bridge\McpDiscoveryService: ~
+    Mosyca\Core\Bridge\McpExecutionService: ~
+
     # — V0.8: Ledger REST controller —
     Mosyca\Core\Ledger\Controller\LedgerController:
         arguments:
