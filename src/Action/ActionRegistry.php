@@ -35,6 +35,26 @@ final class ActionRegistry
     }
 
     /**
+     * Find the first registered action whose implementation is the given class.
+     *
+     * Used by the True-REST gateway adapters: the factory stores the action's
+     * class string in HttpOperation::extraProperties['mosyca_action'], and the
+     * adapters resolve it back to a live ActionInterface instance here.
+     *
+     * @throws \InvalidArgumentException When no action of the given class is registered
+     */
+    public function getByClass(string $className): ActionInterface
+    {
+        foreach ($this->actions as $action) {
+            if ($action instanceof $className) {
+                return $action;
+            }
+        }
+
+        throw new \InvalidArgumentException("No action of class '{$className}' found in registry.");
+    }
+
+    /**
      * Return a filtered subset of the registry.
      *
      * @param string|null $connector Filter by plugin_name prefix (e.g. 'shopware6' matches 'shopware6:*')

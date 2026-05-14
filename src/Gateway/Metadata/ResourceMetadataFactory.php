@@ -84,6 +84,10 @@ final readonly class ResourceMetadataFactory implements ResourceMetadataCollecti
                 $rawContext = $opDef['openapiContext'] ?? null;
                 $openapiCtx = \is_array($rawContext) ? $rawContext : null;
 
+                // mosyca_action carries the action's FQCN so the adapter can
+                // resolve it via ActionRegistry::getByClass() without parsing the route.
+                $extraProperties = ['mosyca_action' => $opDef['action']];
+
                 if ($isWrite) {
                     $operations[$opName] = new HttpOperation(
                         method: $method,
@@ -95,6 +99,7 @@ final readonly class ResourceMetadataFactory implements ResourceMetadataCollecti
                         processor: ResourceStateProcessor::class,
                         formats: ['json'],
                         paginationEnabled: false,
+                        extraProperties: $extraProperties,
                     );
                 } else {
                     $operations[$opName] = new HttpOperation(
@@ -105,6 +110,7 @@ final readonly class ResourceMetadataFactory implements ResourceMetadataCollecti
                         provider: ResourceStateProvider::class,
                         formats: ['json'],
                         paginationEnabled: false,
+                        extraProperties: $extraProperties,
                     );
                 }
             }
