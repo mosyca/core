@@ -7,6 +7,9 @@ namespace Mosyca\Core\DependencyInjection;
 use Mosyca\Core\Action\ActionInterface;
 use Mosyca\Core\Depot\DepotInterface;
 use Mosyca\Core\Depot\FilesystemDepot;
+use Mosyca\Core\Gateway\Metadata\ResourceMetadataFactory;
+use Mosyca\Core\Resource\AbstractResource;
+use Mosyca\Core\Resource\ResourceRegistry;
 use Mosyca\Core\Vault\Clearance\ClearanceRegistry;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -14,6 +17,7 @@ use Symfony\Component\DependencyInjection\Definition;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Extension\PrependExtensionInterface;
 use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Symfony\Component\DependencyInjection\Reference;
 
 final class MosycaCoreExtension extends Extension implements PrependExtensionInterface
 {
@@ -36,6 +40,24 @@ final class MosycaCoreExtension extends Extension implements PrependExtensionInt
         // This works across YAML files — unlike _instanceof which is file-scoped.
         $container->registerForAutoconfiguration(ActionInterface::class)
             ->addTag('mosyca.action');
+
+        // Global auto-tagging: any AbstractResource subclass registered as a service
+        // gets the mosyca.resource tag automatically (same cross-bundle scope as above).
+        $container->registerForAutoconfiguration(AbstractResource::class)
+            ->addTag('mosyca.resource');
+
+        // V0.11: ResourceMetadataFactory decorator — only when ApiPlatformBundle is loaded.
+        // The decorator requires api_platform.metadata.resource.metadata_collection_factory to
+        // exist, which is only registered by ApiPlatformBundle. Registering unconditionally
+        // causes a ServiceNotFoundException in test kernels that don't load API Platform.
+        if (\is_array($bundles) && isset($bundles['ApiPlatformBundle'])) {
+            $factoryDef = new Definition(ResourceMetadataFactory::class);
+            $factoryDef->setAutowired(true);
+            $factoryDef->setDecoratedService('api_platform.metadata.resource.metadata_collection_factory');
+            $factoryDef->setArgument('$inner', new Reference(ResourceMetadataFactory::class.'.inner'));
+            $factoryDef->setArgument('$registry', new Reference(ResourceRegistry::class));
+            $container->setDefinition(ResourceMetadataFactory::class, $factoryDef);
+        }
 
         // ClearanceRegistry — optional custom YAML path from project config/mosyca/clearances.yaml
         $projectDir = $container->getParameter('kernel.project_dir');

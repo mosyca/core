@@ -34,6 +34,26 @@ services:
     Mosyca\Core\Console\Command\ActionListCommand: ~
     Mosyca\Core\Console\Command\ActionShowCommand: ~
 
+    # — V0.11: Resource Layer —
+    # ResourceRegistry is public so the REST gateway and tests can fetch it directly.
+    # ResourceRegistrationPass wires all mosyca.resource-tagged services into it at compile time.
+    # Auto-tagging of AbstractResource subclasses is configured in MosycaCoreExtension.
+    Mosyca\Core\Resource\ResourceRegistry:
+        public: true
+
+    # Built-in system resource (core:system — ping + echo).
+    Mosyca\Core\Action\Builtin\Resource\SystemResource: ~
+
+    # — V0.11: True-REST Gateway (factory-based, zero custom controllers) —
+    # MosycaResource is the API Platform backing class; ResourceMetadataFactory replaces its
+    # empty operations array with dynamically-generated HttpOperation objects at compile time,
+    # one per operation declared in every registered AbstractResource.
+    # ResourceMetadataFactory is registered conditionally (only when ApiPlatformBundle is loaded)
+    # in MosycaCoreExtension::load() — not here — to avoid ServiceNotFoundException in test kernels.
+    Mosyca\Core\Gateway\Resource\MosycaResource: ~
+    Mosyca\Core\Gateway\Provider\ResourceStateProvider: ~
+    Mosyca\Core\Gateway\Processor\ResourceStateProcessor: ~
+
     # — V0.10b: Scaffold from OpenAPI —
     Mosyca\Core\Scaffold\ParameterConstraintMapper: ~
     Mosyca\Core\Scaffold\OpenApiSpecLoader: ~
