@@ -61,9 +61,9 @@ final readonly class McpRpcController
         try {
             $result = match ($method) {
                 'initialize' => [
-                    'protocolVersion' => '2024-11-05',
+                    'protocolVersion' => '2025-11-25',
                     'serverInfo'      => ['name' => 'mosyca-mcp-server', 'version' => '0.13.2'],
-                    'capabilities'    => ['tools' => []],
+                    'capabilities'    => ['tools' => new \stdClass()],
                 ],
                 'notifications/initialized', 'ping' => ['status' => 'ok'],
                 'tools/list' => ['tools' => $this->discoveryService->listTools()],

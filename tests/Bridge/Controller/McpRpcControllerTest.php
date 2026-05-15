@@ -95,7 +95,7 @@ final class McpRpcControllerTest extends TestCase
         self::assertSame('2.0', $data['jsonrpc']);
         self::assertSame(0, $data['id']);
         self::assertArrayHasKey('result', $data);
-        self::assertSame('2024-11-05', $data['result']['protocolVersion']);
+        self::assertSame('2025-11-25', $data['result']['protocolVersion']);
     }
 
     public function testInitializeReturnsServerInfo(): void
@@ -113,6 +113,26 @@ final class McpRpcControllerTest extends TestCase
 
         self::assertArrayHasKey('capabilities', $data['result']);
         self::assertArrayHasKey('tools', $data['result']['capabilities']);
+    }
+
+    public function testInitializeToolCapabilityIsJsonObject(): void
+    {
+        // MCP spec requires "tools": {} (JSON object), not "tools": [] (JSON array).
+        // PHP encodes stdClass as {} and empty array as [], so we must verify the
+        // raw JSON wire format — not the decoded PHP value.
+        $request = Request::create(
+            '/api/v1/mcp/rpc',
+            'POST',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            (string) json_encode(['jsonrpc' => '2.0', 'id' => 0, 'method' => 'initialize', 'params' => []]),
+        );
+
+        $responseJson = ($this->controller)($request)->getContent();
+
+        self::assertStringContainsString('"tools":{}', str_replace(' ', '', (string) $responseJson));
     }
 
     public function testNotificationsInitializedReturnsOk(): void
