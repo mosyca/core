@@ -229,6 +229,70 @@ V0.13 MCP Bridge PHP-native: ConstraintSchemaTranslator, McpDiscoveryService,
       no REST/API Platform (ADR 3.1), flat tool names (ADR 3.2), tenant injection (ADR 3.4)
 V0.13b MCP HTTP Endpoint: McpRpcController — JSON-RPC 2.0 at POST /api/v1/mcp/rpc,
       wraps Discovery + Execution services, no AbstractController, no API Platform
+V0.13d Protocol Hardening: notification detection (HTTP 204), JSON-RPC schema
+      validation trait (justinrainbow/json-schema), MCP guardrails in CLAUDE.md
+```
+
+---
+
+## MCP & JSON-RPC 2.0 Strictness Guardrails
+
+### Rule 1 — Notification Protocol (JSON-RPC 2.0 §5)
+
+A **Notification** is a request where the `id` member is **absent** (not just null).
+The server **MUST NOT** send any response to a Notification.
+
+For HTTP transport: return `new Response('', Response::HTTP_NO_CONTENT)`.
+
+Detection: `!\array_key_exists('id', $body)` — **NOT** `$body['id'] === null`.
+A request with `"id": null` has the key present and IS a normal request.
+
+```php
+// ✅ Correct
+if (!\array_key_exists('id', $body)) {
+    return new Response('', Response::HTTP_NO_CONTENT);
+}
+
+// ❌ Wrong — treats explicit null id as a Notification
+if ($body['id'] === null) { ... }
+```
+
+### Rule 2 — Object vs Array Serialization
+
+`json_encode([])` → `[]` (JSON array — **WRONG** for capability descriptor maps)
+`json_encode(new \stdClass())` → `{}` (JSON object — **CORRECT**)
+
+Always use `new \stdClass()` for empty descriptor objects in MCP responses:
+
+```php
+// ✅ Correct
+'capabilities' => ['tools' => new \stdClass()]
+
+// ❌ Wrong — encodes as []
+'capabilities' => ['tools' => []]
+```
+
+### Rule 3 — Error Envelope Format
+
+All JSON-RPC error responses must include exactly:
+- `jsonrpc: "2.0"`
+- `id`: the request id (or `null` for parse errors before id extraction)
+- `error.code`: integer from the reserved range (`-32700`, `-32601`, `-32602`, `-32603`)
+- `error.message`: human-readable string
+
+Never put error details in `result`. Never use HTTP 4xx/5xx for RPC errors.
+
+### Rule 4 — Test Assertions
+
+Use `JsonRpcSchemaValidatorTrait::assertValidJsonRpcResponse()` in every
+controller test that decodes a response. The `call()` and `callRaw()` helpers in
+`McpRpcControllerTest` invoke it automatically on every non-null response.
+
+To verify exact wire format (e.g. `"tools":{}` not `"tools":[]`), assert on the
+raw JSON string — decoded PHP values lose the distinction:
+
+```php
+self::assertStringContainsString('"tools":{}', str_replace(' ', '', (string) $responseJson));
 ```
 
 ---
