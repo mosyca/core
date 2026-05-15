@@ -85,6 +85,54 @@ final class McpRpcControllerTest extends TestCase
     }
 
     // -----------------------------------------------------------------------
+    // MCP handshake — initialize / notifications/initialized / ping
+    // -----------------------------------------------------------------------
+
+    public function testInitializeReturnsProtocolVersion(): void
+    {
+        $data = $this->call(['jsonrpc' => '2.0', 'id' => 0, 'method' => 'initialize', 'params' => []]);
+
+        self::assertSame('2.0', $data['jsonrpc']);
+        self::assertSame(0, $data['id']);
+        self::assertArrayHasKey('result', $data);
+        self::assertSame('2024-11-05', $data['result']['protocolVersion']);
+    }
+
+    public function testInitializeReturnsServerInfo(): void
+    {
+        $data = $this->call(['jsonrpc' => '2.0', 'id' => 0, 'method' => 'initialize', 'params' => []]);
+
+        self::assertIsArray($data['result']['serverInfo']);
+        self::assertSame('mosyca-mcp-server', $data['result']['serverInfo']['name']);
+        self::assertArrayHasKey('version', $data['result']['serverInfo']);
+    }
+
+    public function testInitializeReturnsToolCapabilities(): void
+    {
+        $data = $this->call(['jsonrpc' => '2.0', 'id' => 0, 'method' => 'initialize', 'params' => []]);
+
+        self::assertArrayHasKey('capabilities', $data['result']);
+        self::assertArrayHasKey('tools', $data['result']['capabilities']);
+    }
+
+    public function testNotificationsInitializedReturnsOk(): void
+    {
+        $data = $this->call(['jsonrpc' => '2.0', 'id' => null, 'method' => 'notifications/initialized']);
+
+        self::assertArrayHasKey('result', $data);
+        self::assertSame('ok', $data['result']['status']);
+    }
+
+    public function testPingReturnsOk(): void
+    {
+        $data = $this->call(['jsonrpc' => '2.0', 'id' => 99, 'method' => 'ping']);
+
+        self::assertSame(99, $data['id']);
+        self::assertArrayHasKey('result', $data);
+        self::assertSame('ok', $data['result']['status']);
+    }
+
+    // -----------------------------------------------------------------------
     // tools/list
     // -----------------------------------------------------------------------
 

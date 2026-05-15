@@ -17,8 +17,11 @@ use Symfony\Component\Routing\Attribute\Route;
  * POST /api/v1/mcp/rpc
  *
  * Supported methods:
- *   tools/list  → McpDiscoveryService::listTools()
- *   tools/call  → McpExecutionService::callTool()
+ *   initialize              → MCP handshake (protocol version + server capabilities)
+ *   notifications/initialized → Client confirmation after handshake (no-op ack)
+ *   ping                    → Health check
+ *   tools/list              → McpDiscoveryService::listTools()
+ *   tools/call              → McpExecutionService::callTool()
  *
  * Does NOT extend AbstractController — pure Symfony controller with constructor injection.
  * Uses the PHP-native Bridge services directly (ADR 3.1), bypassing API Platform entirely.
@@ -57,6 +60,12 @@ final readonly class McpRpcController
 
         try {
             $result = match ($method) {
+                'initialize' => [
+                    'protocolVersion' => '2024-11-05',
+                    'serverInfo'      => ['name' => 'mosyca-mcp-server', 'version' => '0.13.2'],
+                    'capabilities'    => ['tools' => []],
+                ],
+                'notifications/initialized', 'ping' => ['status' => 'ok'],
                 'tools/list' => ['tools' => $this->discoveryService->listTools()],
                 'tools/call' => $this->callTool($body),
                 default => throw new \InvalidArgumentException(\sprintf('Method not found: %s', $method), -32601),
