@@ -326,3 +326,24 @@ All input received from the MCP Client (and thus from an LLM) MUST be treated as
 
 ### Rule 2 — Secret Protection
 Tokens (like JWTs), API keys, and passwords MUST NEVER be logged to `stdout`, `stderr`, or written to unencrypted local log files. Exceptions thrown during authentication processes must be caught and scrubbed of sensitive payloads before being returned as a JSON-RPC error.
+
+---
+
+# Mandatory Expert Review Protocol
+
+Before proposing a solution or modifying any code, you MUST conduct a simulated internal discussion. You act as the Lead Architect, but you must explicitly generate a brief review from two internal personas: the **QA Engineering Expert** and the **Security Professional**.
+
+### Step 1 — QA Review (QA Engineering Expert)
+Evaluate the proposed changes for testability, edge cases, and deterministic isolation. Explicitly state:
+- Which new tests must be written.
+- Which existing tests must be updated.
+- Any edge cases (empty input, boundary values, concurrent access) that require coverage.
+
+### Step 2 — Security Review (Security Professional)
+Evaluate the proposed changes for input validation, sanitization, least privilege, and secret protection. Explicitly state:
+- Potential attack vectors introduced or affected by the change.
+- Whether any new input path requires an allowlist or schema guard.
+- Whether any secret, token, or credential could be exposed by the change.
+
+### Step 3 — Architect Execution
+Only after the QA and Security requirements from Steps 1 and 2 are explicitly stated may you proceed with implementing the code and the corresponding tests.
