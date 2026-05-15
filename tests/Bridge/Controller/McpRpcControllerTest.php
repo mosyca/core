@@ -13,14 +13,18 @@ use Mosyca\Core\Bridge\Controller\McpRpcController;
 use Mosyca\Core\Bridge\McpDiscoveryService;
 use Mosyca\Core\Bridge\McpExecutionService;
 use Mosyca\Core\Resource\ResourceRegistry;
+use Mosyca\Core\Tests\Bridge\JsonRpcSchemaValidatorTrait;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * @covers \Mosyca\Core\Bridge\Controller\McpRpcController
  */
 final class McpRpcControllerTest extends TestCase
 {
+    use JsonRpcSchemaValidatorTrait;
+
     private McpRpcController $controller;
 
     protected function setUp(): void
@@ -48,6 +52,9 @@ final class McpRpcControllerTest extends TestCase
     // -----------------------------------------------------------------------
 
     /**
+     * Dispatch a JSON-RPC 2.0 request and return the decoded response.
+     * Also asserts JSON-RPC 2.0 schema conformance on every non-null response.
+     *
      * @param array<string, mixed> $body
      */
     private function call(array $body): mixed
@@ -63,10 +70,19 @@ final class McpRpcControllerTest extends TestCase
         );
 
         $response = ($this->controller)($request);
+        $data = json_decode((string) $response->getContent(), true);
 
-        return json_decode((string) $response->getContent(), true);
+        if (\is_array($data)) {
+            $this->assertValidJsonRpcResponse($data);
+        }
+
+        return $data;
     }
 
+    /**
+     * Dispatch a raw string body and return the decoded response.
+     * Also asserts JSON-RPC 2.0 schema conformance on every non-null response.
+     */
     private function callRaw(string $rawBody): mixed
     {
         $request = Request::create(
@@ -80,8 +96,34 @@ final class McpRpcControllerTest extends TestCase
         );
 
         $response = ($this->controller)($request);
+        $data = json_decode((string) $response->getContent(), true);
 
-        return json_decode((string) $response->getContent(), true);
+        if (\is_array($data)) {
+            $this->assertValidJsonRpcResponse($data);
+        }
+
+        return $data;
+    }
+
+    /**
+     * Dispatch a JSON-RPC 2.0 request and return the raw Response object.
+     * Use this to assert HTTP status codes (e.g. 204 for Notifications).
+     *
+     * @param array<string, mixed> $body
+     */
+    private function callResponse(array $body): Response
+    {
+        $request = Request::create(
+            '/api/v1/mcp/rpc',
+            'POST',
+            [],
+            [],
+            [],
+            ['CONTENT_TYPE' => 'application/json'],
+            (string) json_encode($body),
+        );
+
+        return ($this->controller)($request);
     }
 
     // -----------------------------------------------------------------------
@@ -135,12 +177,33 @@ final class McpRpcControllerTest extends TestCase
         self::assertStringContainsString('"tools":{}', str_replace(' ', '', (string) $responseJson));
     }
 
-    public function testNotificationsInitializedReturnsOk(): void
+    public function testNotificationsInitializedWithExplicitNullIdReturnsOk(): void
     {
+        // "id": null is present as a key → this is a regular request, not a Notification.
+        // Server must respond normally.
         $data = $this->call(['jsonrpc' => '2.0', 'id' => null, 'method' => 'notifications/initialized']);
 
         self::assertArrayHasKey('result', $data);
         self::assertSame('ok', $data['result']['status']);
+    }
+
+    public function testNotificationsInitializedWithoutIdReturns204(): void
+    {
+        // No "id" key at all = JSON-RPC 2.0 Notification (§5).
+        // Server MUST NOT reply — HTTP 204 No Content, empty body.
+        $response = $this->callResponse(['jsonrpc' => '2.0', 'method' => 'notifications/initialized']);
+
+        self::assertSame(204, $response->getStatusCode());
+        self::assertSame('', (string) $response->getContent());
+    }
+
+    public function testAnyRequestWithoutIdReturns204(): void
+    {
+        // Even unknown methods sent as Notifications must get 204, not -32601.
+        // Per JSON-RPC 2.0 spec the server MUST NOT respond to any Notification.
+        $response = $this->callResponse(['jsonrpc' => '2.0', 'method' => 'tools/unknown']);
+
+        self::assertSame(204, $response->getStatusCode());
     }
 
     public function testPingReturnsOk(): void
@@ -323,12 +386,15 @@ final class McpRpcControllerTest extends TestCase
 
     public function testNullIdPreservedInErrorResponse(): void
     {
-        $data = $this->call(['jsonrpc' => '2.0', 'method' => 'tools/unknown']);
-        // No id key in request — should be null in response.
+        // Explicit "id": null is present as a key → regular request (not Notification).
+        // An unknown method with explicit id:null must return an error with id:null.
+        $data = $this->call(['jsonrpc' => '2.0', 'id' => null, 'method' => 'tools/unknown']);
+
         self::assertNull($data['id']);
+        self::assertSame(-32601, $data['error']['code']);
     }
 
-    public function testResponseIsAlwaysHttp200(): void
+    public function testResponseIsAlwaysHttp200ForJsonRpcRequests(): void
     {
         $request = Request::create(
             '/api/v1/mcp/rpc',
