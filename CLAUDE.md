@@ -301,3 +301,28 @@ self::assertStringContainsString('"tools":{}', str_replace(' ', '', (string) $re
 
 Conventional Commits: `feat(v0.x): ...`, `fix: ...`, `test: ...`, `docs: ...`, `chore: ...`
 Commit and push after every completed slice (see workspace CLAUDE.md).
+
+---
+
+## QA & Testing Guardrails
+
+### Rule 1 — Design for Testability
+All services and controllers MUST use Dependency Injection. Do not instantiate external dependencies or strictly coupled classes inside a method using the `new` keyword if it prevents mocking.
+
+### Rule 2 — Deterministic Isolation
+Unit tests MUST NOT rely on external state (live databases, external APIs, active file systems). Use appropriate mocks, stubs, or in-memory SQLite databases for isolation.
+
+### Rule 3 — Schema over Manual Assertion
+Do not manually assert complex data structures if a formal schema exists. Validate inputs and outputs against established schemas (e.g., JSON Schema for RPC).
+
+---
+
+## Security & Authentication Guardrails
+
+### Rule 1 — Zero-Trust LLM Input
+All input received from the MCP Client (and thus from an LLM) MUST be treated as strictly untrusted and potentially malicious.
+- All tool inputs must be strictly type-checked and sanitized before execution.
+- NEVER pass raw input directly to `shell_exec`, `system`, or filesystem functions without rigorous validation against a strict allowlist.
+
+### Rule 2 — Secret Protection
+Tokens (like JWTs), API keys, and passwords MUST NEVER be logged to `stdout`, `stderr`, or written to unencrypted local log files. Exceptions thrown during authentication processes must be caught and scrubbed of sensitive payloads before being returned as a JSON-RPC error.
