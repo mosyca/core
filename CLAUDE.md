@@ -297,6 +297,32 @@ self::assertStringContainsString('"tools":{}', str_replace(' ', '', (string) $re
 
 ---
 
+## Vault (Section 4) Guardrails
+
+### Rule V1 — Interface Segregation
+All encryption/decryption logic MUST be abstracted behind `SecretCipherInterface`.
+Never call `sodium_crypto_*` directly inside business logic services (`VaultManager`, etc.).
+
+### Rule V2 — No Secret Leaks
+Any action or service interacting with the Vault MUST NEVER return the decrypted
+secret string in an `ActionResult`, JSON-RPC response, or log output.
+Secrets are for internal connector use only (injected into HTTP headers at runtime, never surfaced).
+
+### Rule V3 — Test Isolation
+Unit tests for Vault encryption MUST use `DummySecretCipher` or a hardcoded test key.
+Never rely on `MOSYCA_VAULT_MASTER_KEY` from the environment in unit tests.
+
+### Rule V4 — Mandatory Multi-Persona Protocol
+Before generating any code for Section 4 (Vault), document the QA and Security review
+(Steps 1 & 2 of the Expert Review Protocol) explicitly in the output.
+
+### Rule V5 — Strict Token Scoping
+`VaultAwareHttpClient` MUST validate the target URI against an integration-specific
+allowlist before injecting any `Authorization` header.
+Token injection for arbitrary URIs is strictly forbidden (network exfiltration prevention).
+
+---
+
 ## Commit Convention
 
 Conventional Commits: `feat(v0.x): ...`, `fix: ...`, `test: ...`, `docs: ...`, `chore: ...`
