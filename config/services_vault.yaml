@@ -37,6 +37,30 @@ services:
             $allowedUris: []
             $refreshers: !tagged_iterator mosyca.vault.refresher
 
+    # ── V0.14d: Out-of-Band Provisioning & OAuth Callback ───────────────────
+    # ProvisioningLinkGenerator: autowired (UrlGeneratorInterface + UriSigner both
+    # registered by FrameworkBundle — no explicit arguments needed).
+    Mosyca\Core\Vault\Provisioning\ProvisioningLinkGenerator: ~
+
+    # OAuthStateEncoder: HMAC key bound to kernel.secret.
+    Mosyca\Core\Vault\Provisioning\OAuthStateEncoder:
+        arguments:
+            $secret: '%kernel.secret%'
+
+    # REST controllers (autoconfigure adds the controller tag).
+    Mosyca\Core\Vault\Controller\ProvisionController: ~
+
+    Mosyca\Core\Vault\Controller\OAuthCallbackController:
+        arguments:
+            $handlers: !tagged_iterator mosyca.vault.oauth_handler
+
+    # Wire ProvisioningLinkGenerator into McpRpcController when Vault is loaded.
+    # This overrides the default constructor (which has $provisioningLinkGenerator = null)
+    # so that AUTH_REQUIRED responses carry a signed provisioning URL.
+    Mosyca\Core\Bridge\Controller\McpRpcController:
+        arguments:
+            $provisioningLinkGenerator: '@Mosyca\Core\Vault\Provisioning\ProvisioningLinkGenerator'
+
     # ── V0.7: Operator Authentication & MCP Tokens ───────────────────────────
     Mosyca\Core\Vault\Repository\OperatorRepository: ~
     Mosyca\Core\Vault\Repository\McpTokenRepository: ~
