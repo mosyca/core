@@ -6,6 +6,7 @@ namespace Mosyca\Core\Tests\Vault\Http;
 
 use Mosyca\Core\Vault\Exception\UriNotAllowedException;
 use Mosyca\Core\Vault\Http\VaultAwareHttpClient;
+use Mosyca\Core\Vault\Http\VaultUriResolverInterface;
 use Mosyca\Core\Vault\Refresh\TokenRefresherInterface;
 use Mosyca\Core\Vault\VaultManager;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -42,12 +43,14 @@ final class VaultAwareHttpClientTest extends TestCase
         MockHttpClient $inner,
         ?TokenRefresherInterface $refresher = null,
         ?array $allowedUris = null,
+        ?VaultUriResolverInterface $uriResolver = null,
     ): VaultAwareHttpClient {
         return new VaultAwareHttpClient(
             $inner,
             $this->vault,
             $allowedUris ?? self::ALLOWED_URIS,
             null !== $refresher ? [$refresher] : [],
+            $uriResolver,
         );
     }
 
@@ -439,6 +442,145 @@ final class VaultAwareHttpClientTest extends TestCase
         ]);
     }
 
+    // ── dynamic URI resolver ──────────────────────────────────────────────────
+
+    public function testDynamicResolverUsedWhenStaticListIsEmpty(): void
+    {
+        // When $allowedUris[integration] is empty but a resolver is registered,
+        // the resolver's result is used as the effective allowlist.
+        $capturedAuth = null;
+        $inner = new MockHttpClient(
+            static function (string $method, string $url, array $options) use (&$capturedAuth): MockResponse {
+                $capturedAuth = self::extractAuthHeader($options);
+
+                return new MockResponse('{}', ['http_code' => 200]);
+            },
+        );
+
+        $this->vault->method('retrieveSecret')
+            ->willReturn(['base_url' => 'https://my-shop.example.com', 'access_token' => 'shop-token']);
+
+        $resolver = $this->createMock(VaultUriResolverInterface::class);
+        $resolver->method('resolve')->willReturn(['https://my-shop.example.com/']);
+
+        // Static allowlist is empty — resolver must supply the URI.
+        $client = $this->makeClient($inner, allowedUris: [], uriResolver: $resolver);
+
+        $response = $client->request('GET', 'https://my-shop.example.com/api/orders', [
+            'extra' => ['vault' => ['integration' => 'shopware6', 'tenant_id' => 'tenant-1']],
+        ]);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertSame('Bearer shop-token', $capturedAuth);
+    }
+
+    public function testDynamicResolverBlocksNonMatchingUri(): void
+    {
+        // The resolver returns a real shop's base URI.
+        // An attacker-controlled URL that doesn't start with it must be rejected.
+        $inner = new MockHttpClient(new MockResponse('{}', ['http_code' => 200]));
+
+        $this->vault->method('retrieveSecret')
+            ->willReturn(['base_url' => 'https://my-shop.example.com', 'access_token' => 'tok']);
+
+        $resolver = $this->createMock(VaultUriResolverInterface::class);
+        $resolver->method('resolve')->willReturn(['https://my-shop.example.com/']);
+
+        $client = $this->makeClient($inner, allowedUris: [], uriResolver: $resolver);
+
+        $this->expectException(UriNotAllowedException::class);
+
+        $client->request('GET', 'https://evil.example.com/steal-tokens', [
+            'extra' => ['vault' => ['integration' => 'shopware6', 'tenant_id' => 'tenant-1']],
+        ]);
+    }
+
+    public function testDynamicResolverReturnsEmptyListCausesException(): void
+    {
+        // If the resolver cannot determine a valid base_url (e.g. payload missing 'base_url'),
+        // it returns [] → fail-closed: UriNotAllowedException thrown.
+        $inner = new MockHttpClient(new MockResponse('{}', ['http_code' => 200]));
+
+        $this->vault->method('retrieveSecret')
+            ->willReturn(['client_id' => 'id', 'client_secret' => 'secret']); // no base_url
+
+        $resolver = $this->createMock(VaultUriResolverInterface::class);
+        $resolver->method('resolve')->willReturn([]); // no usable URI
+
+        $client = $this->makeClient($inner, allowedUris: [], uriResolver: $resolver);
+
+        $this->expectException(UriNotAllowedException::class);
+
+        $client->request('GET', 'https://my-shop.example.com/api/orders', [
+            'extra' => ['vault' => ['integration' => 'shopware6', 'tenant_id' => 'tenant-1']],
+        ]);
+    }
+
+    public function testDynamicResolverNotCalledWhenStaticListIsPresent(): void
+    {
+        // The resolver is registered but the static allowlist has entries.
+        // The resolver MUST NOT be called — static list takes precedence.
+        $inner = new MockHttpClient(new MockResponse('{}', ['http_code' => 200]));
+        $this->vault->method('retrieveSecret')->willReturn(['access_token' => 'tok']);
+
+        $resolver = $this->createMock(VaultUriResolverInterface::class);
+        $resolver->expects(self::never())->method('resolve');
+
+        // Non-empty static allowlist → resolver never consulted.
+        $client = $this->makeClient($inner, uriResolver: $resolver);
+
+        $client->request('GET', 'https://api.shopware.example.com/orders', [
+            'extra' => ['vault' => ['integration' => 'shopware6', 'tenant_id' => 'tenant-1']],
+        ]);
+    }
+
+    public function testVaultAccessedBeforeUriCheckInDynamicPath(): void
+    {
+        // In the dynamic path, the Vault IS accessed (to retrieve base_url from payload)
+        // before the URI validation. This is intentional and Rule-V5-compliant.
+        // Contrast with the static path where vault is never accessed for blocked URIs.
+        $inner = new MockHttpClient(new MockResponse('{}', ['http_code' => 200]));
+
+        // Vault MUST be accessed once (to supply payload to the resolver).
+        $this->vault->expects(self::once())->method('retrieveSecret')
+            ->willReturn(['base_url' => 'https://real-shop.example.com', 'access_token' => 'tok']);
+
+        $resolver = $this->createMock(VaultUriResolverInterface::class);
+        // Resolver returns a different URI than the request URL → blocked.
+        $resolver->method('resolve')->willReturn(['https://real-shop.example.com/']);
+
+        $client = $this->makeClient($inner, allowedUris: [], uriResolver: $resolver);
+
+        try {
+            $client->request('GET', 'https://evil.example.com/steal', [
+                'extra' => ['vault' => ['integration' => 'shopware6', 'tenant_id' => 'tenant-1']],
+            ]);
+        } catch (UriNotAllowedException) {
+            // expected — the important assertion is that vault WAS accessed (see expects above)
+        }
+    }
+
+    public function testDynamicResolverReceivesCorrectPayloadAndContext(): void
+    {
+        // The resolver receives the exact vault payload and the correct tenant context.
+        $inner = new MockHttpClient(new MockResponse('{}', ['http_code' => 200]));
+
+        $storedPayload = ['base_url' => 'https://my-shop.example.com', 'access_token' => 'tok'];
+        $this->vault->method('retrieveSecret')->willReturn($storedPayload);
+
+        $resolver = $this->createMock(VaultUriResolverInterface::class);
+        $resolver->expects(self::once())
+            ->method('resolve')
+            ->with('tenant-acme', 'shopware6', $storedPayload)
+            ->willReturn(['https://my-shop.example.com/']);
+
+        $client = $this->makeClient($inner, allowedUris: [], uriResolver: $resolver);
+
+        $client->request('GET', 'https://my-shop.example.com/api/product', [
+            'extra' => ['vault' => ['integration' => 'shopware6', 'tenant_id' => 'tenant-acme']],
+        ]);
+    }
+
     // ── withOptions ───────────────────────────────────────────────────────────
 
     public function testWithOptionsReturnsNewInstance(): void
@@ -472,6 +614,23 @@ final class VaultAwareHttpClientTest extends TestCase
         ]);
 
         self::assertSame('Bearer tok-from-withOptions', $capturedAuth);
+    }
+
+    public function testWithOptionsPreservesDynamicResolver(): void
+    {
+        // withOptions() must carry the VaultUriResolverInterface through to the new instance.
+        $inner = new MockHttpClient(new MockResponse('{}', ['http_code' => 200]));
+        $this->vault->method('retrieveSecret')
+            ->willReturn(['base_url' => 'https://my-shop.example.com', 'access_token' => 'tok']);
+
+        $resolver = $this->createMock(VaultUriResolverInterface::class);
+        $resolver->expects(self::once())->method('resolve')->willReturn(['https://my-shop.example.com/']);
+
+        $client = $this->makeClient($inner, allowedUris: [], uriResolver: $resolver)->withOptions([]);
+
+        $client->request('GET', 'https://my-shop.example.com/api/product', [
+            'extra' => ['vault' => ['integration' => 'shopware6', 'tenant_id' => 'tenant-1']],
+        ]);
     }
 
     // ── private helpers ───────────────────────────────────────────────────────
