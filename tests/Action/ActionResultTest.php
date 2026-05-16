@@ -297,4 +297,77 @@ final class ActionResultTest extends TestCase
 
         self::assertSame('ERROR_LEGACY', $result->errorCode);
     }
+
+    // ── V0.14a: ActionResult::authRequired() ─────────────────────────────────
+
+    public function testAuthRequiredIsNotSuccess(): void
+    {
+        $result = ActionResult::authRequired('spotify');
+
+        self::assertFalse($result->success);
+    }
+
+    public function testAuthRequiredErrorCode(): void
+    {
+        $result = ActionResult::authRequired('shopware6');
+
+        self::assertSame('AUTH_REQUIRED', $result->errorCode);
+    }
+
+    public function testAuthRequiredSummaryContainsIntegrationType(): void
+    {
+        $result = ActionResult::authRequired('spotify');
+
+        self::assertStringContainsString('spotify', $result->summary);
+    }
+
+    public function testAuthRequiredCorrectionHintContainsIntegrationType(): void
+    {
+        $result = ActionResult::authRequired('firebase');
+
+        self::assertNotNull($result->correctionHint);
+        self::assertStringContainsString('firebase', $result->correctionHint);
+    }
+
+    public function testAuthRequiredDataContainsIntegrationType(): void
+    {
+        $result = ActionResult::authRequired('shopware6');
+
+        self::assertIsArray($result->data);
+        /** @var array<string, mixed> $data */
+        $data = $result->data;
+        self::assertArrayHasKey('integration_type', $data);
+        self::assertSame('shopware6', $data['integration_type']);
+    }
+
+    public function testAuthRequiredDataContainsRequiredScopes(): void
+    {
+        $result = ActionResult::authRequired('spotify', ['playlist-modify-public', 'user-read-email']);
+
+        /** @var array<string, mixed> $data */
+        $data = $result->data;
+        self::assertArrayHasKey('required_scopes', $data);
+        self::assertSame(['playlist-modify-public', 'user-read-email'], $data['required_scopes']);
+    }
+
+    public function testAuthRequiredWithoutScopesDefaultsToEmptyArray(): void
+    {
+        $result = ActionResult::authRequired('spotify');
+
+        /** @var array<string, mixed> $data */
+        $data = $result->data;
+        self::assertSame([], $data['required_scopes']);
+    }
+
+    public function testAuthRequiredDataContainsNoSecretValues(): void
+    {
+        // The data array MUST only contain integration type and scopes — no credentials.
+        $result = ActionResult::authRequired('shopware6', ['write:orders']);
+
+        /** @var array<string, mixed> $data */
+        $data = $result->data;
+        self::assertCount(2, $data, 'data must contain exactly integration_type and required_scopes');
+        self::assertArrayHasKey('integration_type', $data);
+        self::assertArrayHasKey('required_scopes', $data);
+    }
 }

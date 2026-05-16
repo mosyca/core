@@ -106,6 +106,40 @@ final class ActionResult
     }
 
     /**
+     * Signal that credentials are missing for a given integration.
+     *
+     * The MCP Bridge detects errorCode 'AUTH_REQUIRED' and triggers the out-of-band
+     * provisioning flow (V0.14d), surfacing a secure link to the user without
+     * ever prompting Claude to collect credentials directly.
+     *
+     * Usage in connector actions:
+     * <code>
+     *     $secret = $this->vault->retrieveSecret($context->getTenantId(), 'spotify');
+     *     if (null === $secret) {
+     *         return ActionResult::authRequired('spotify', ['playlist-modify-public']);
+     *     }
+     * </code>
+     *
+     * SECURITY: The returned `data` array carries ONLY the integration type and
+     * required scope identifiers — never credential values (Vault Rule V2).
+     *
+     * @param string[] $requiredScopes OAuth scopes or permission identifiers needed
+     */
+    public static function authRequired(string $integrationType, array $requiredScopes = []): self
+    {
+        return new self(
+            success: false,
+            data: ['integration_type' => $integrationType, 'required_scopes' => $requiredScopes],
+            summary: \sprintf('Authentication required: no credentials stored for "%s".', $integrationType),
+            errorCode: 'AUTH_REQUIRED',
+            correctionHint: \sprintf(
+                'Use the out-of-band provisioning link to store credentials for "%s", then retry.',
+                $integrationType,
+            ),
+        );
+    }
+
+    /**
      * Legacy error result.
      *
      * @deprecated Use ActionResult::failure() with errorCode and correctionHint.
