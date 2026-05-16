@@ -288,6 +288,14 @@ final class ActionResult
             'data' => $this->data,
         ];
 
+        if (null !== $this->errorCode) {
+            $result['errorCode'] = $this->errorCode;
+        }
+
+        if (null !== $this->correctionHint) {
+            $result['correctionHint'] = $this->correctionHint;
+        }
+
         if (!empty($this->links)) {
             $result['_links'] = $this->links;
         }

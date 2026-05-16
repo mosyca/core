@@ -6,6 +6,7 @@ namespace Mosyca\Core\Bridge\Controller;
 
 use Mosyca\Core\Bridge\McpDiscoveryService;
 use Mosyca\Core\Bridge\McpExecutionService;
+use Mosyca\Core\Vault\Provisioning\ProvisioningLinkGenerator;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -44,6 +45,7 @@ final readonly class McpRpcController
     public function __construct(
         private McpDiscoveryService $discoveryService,
         private McpExecutionService $executionService,
+        private ?ProvisioningLinkGenerator $provisioningLinkGenerator = null,
     ) {
     }
 
@@ -112,6 +114,31 @@ final readonly class McpRpcController
         $arguments = \is_array($params['arguments'] ?? null) ? $params['arguments'] : [];
 
         $actionResult = $this->executionService->callTool($toolName, $arguments);
+
+        // Vault integration: when AUTH_REQUIRED is returned and a ProvisioningLinkGenerator
+        // is wired in, replace the generic correctionHint with a signed, time-limited URL
+        // that the operator can open to store credentials (Vault Rule V2 — no credential values here).
+        if ('AUTH_REQUIRED' === ($actionResult['errorCode'] ?? null)
+            && null !== $this->provisioningLinkGenerator
+        ) {
+            $integration = \is_string($actionResult['data']['integration_type'] ?? null)
+                ? (string) $actionResult['data']['integration_type'] : '';
+            $tenantId = \is_string($arguments['tenant'] ?? null) ? (string) $arguments['tenant'] : 'default';
+
+            if ('' !== $integration) {
+                try {
+                    $url = $this->provisioningLinkGenerator->generate($integration, $tenantId);
+                    $actionResult['correctionHint'] = \sprintf(
+                        'Open this link to store credentials for "%s" (valid 24 h): %s',
+                        $integration,
+                        $url,
+                    );
+                } catch (\Throwable) {
+                    // URL generation failure must never break the MCP response.
+                    // The original correctionHint from ActionResult::authRequired() survives.
+                }
+            }
+        }
 
         return [
             'content' => [
