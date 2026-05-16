@@ -5,6 +5,24 @@ services:
 
     # Vault — Security, Clearances, ACL, CLI commands, REST controllers.
     # Loaded only when DoctrineBundle is present (see MosycaCoreExtension).
+
+    # ── V0.14a: Credential Cipher (Encryption at Rest) ──────────────────────
+    # Bind SecretCipherInterface to the production Sodium adapter.
+    # The master key is read from the environment (hex-encoded 32-byte secret).
+    # Tests instantiate DummySecretCipher directly — never via DI.
+    Mosyca\Core\Vault\Cipher\SecretCipherInterface:
+        class: Mosyca\Core\Vault\Cipher\SodiumSecretCipher
+        arguments:
+            $masterKey: '%env(MOSYCA_VAULT_MASTER_KEY)%'
+
+    Mosyca\Core\Vault\Cipher\SodiumSecretCipher:
+        arguments:
+            $masterKey: '%env(MOSYCA_VAULT_MASTER_KEY)%'
+
+    # ── V0.14a: Credential Storage ───────────────────────────────────────────
+    Mosyca\Core\Vault\Repository\VaultSecretRepository: ~
+
+    # ── V0.7: Operator Authentication & MCP Tokens ───────────────────────────
     Mosyca\Core\Vault\Repository\OperatorRepository: ~
     Mosyca\Core\Vault\Repository\McpTokenRepository: ~
 
