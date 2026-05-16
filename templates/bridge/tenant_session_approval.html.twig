@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mosyca — Tenant Session Approval</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #f4f6f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            padding: 2.5rem;
+            max-width: 480px;
+            width: 100%;
+        }
+        .logo { font-size: 1.1rem; font-weight: 700; color: #111; letter-spacing: -0.02em; margin-bottom: 1.75rem; }
+        .logo span { color: #4f6cf7; }
+        h1 { font-size: 1.25rem; font-weight: 600; color: #111; margin-bottom: 0.5rem; }
+        p { color: #555; font-size: 0.95rem; line-height: 1.55; margin-bottom: 1rem; }
+        .tenant-badge {
+            display: inline-block;
+            background: #eef0ff;
+            color: #3d52d5;
+            font-family: monospace;
+            font-size: 0.9rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            margin: 0.25rem 0 1rem;
+        }
+        .actions { display: flex; gap: 0.75rem; margin-top: 1.5rem; }
+        .btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .btn:hover { opacity: 0.88; }
+        .btn-approve { background: #22c55e; color: #fff; }
+        .btn-deny    { background: #f87171; color: #fff; }
+        .status-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+        .meta { color: #888; font-size: 0.8rem; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <div class="logo">mosyca<span>.</span></div>
+
+    {% if expired is defined and expired %}
+
+        {# ── Session expired, already decided, or not found ── #}
+        <div class="status-icon">⏱️</div>
+        <h1>This link is no longer valid</h1>
+        <p>
+            This approval link has expired, the session was already approved or denied, or the
+            session was not found. Please ask Claude to call
+            <code>core_system_assume_tenant</code> again to start a new session.
+        </p>
+        {% if session is defined and session is not null %}
+            <p>Session status: <strong>{{ session.state.value }}</strong></p>
+        {% endif %}
+
+    {% elseif confirmed is defined and confirmed %}
+
+        {# ── POST confirmed ── #}
+        {% if approved %}
+            <div class="status-icon">✅</div>
+            <h1>Session approved</h1>
+            <p>
+                Claude can now access the <span class="tenant-badge">{{ session.tenantId }}</span>
+                tenant context using the session token. You may close this window.
+            </p>
+        {% else %}
+            <div class="status-icon">🚫</div>
+            <h1>Session denied</h1>
+            <p>
+                Access to the <span class="tenant-badge">{{ session.tenantId }}</span>
+                tenant context has been denied. The session is permanently closed.
+                Ask Claude to call <code>core_system_assume_tenant</code> if you want to start over.
+            </p>
+        {% endif %}
+
+    {% else %}
+
+        {# ── Pending: render approve / deny form ── #}
+        <h1>Approve tenant context switch?</h1>
+        <p>
+            Claude is requesting permission to execute actions under the following tenant:
+        </p>
+        <div class="tenant-badge">{{ session.tenantId }}</div>
+        <p>
+            If you approve, Claude will be able to call tools scoped to this tenant using
+            the session token. The session is valid for 10 minutes.
+        </p>
+        <p>
+            <strong>Only approve if you initiated this request.</strong>
+        </p>
+
+        <form method="POST">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token }}">
+            <div class="actions">
+                <button type="submit" name="action" value="approve" class="btn btn-approve">
+                    ✓ Approve
+                </button>
+                <button type="submit" name="action" value="deny" class="btn btn-deny">
+                    ✕ Deny
+                </button>
+            </div>
+        </form>
+
+        <div class="meta">
+            Session ID: {{ jti }}<br>
+            Expires: {{ session.expiresAt|date('Y-m-d H:i:s') }} UTC
+        </div>
+
+    {% endif %}
+</div>
+</body>
+</html>

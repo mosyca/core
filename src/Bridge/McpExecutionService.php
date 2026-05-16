@@ -6,6 +6,7 @@ namespace Mosyca\Core\Bridge;
 
 use Mosyca\Core\Action\ActionInterface;
 use Mosyca\Core\Action\ActionRegistry;
+use Mosyca\Core\Bridge\TenantSession\TenantSessionInterceptor;
 use Mosyca\Core\Context\ExecutionContext;
 use Mosyca\Core\Resource\ResourceRegistry;
 
@@ -32,12 +33,14 @@ use Mosyca\Core\Resource\ResourceRegistry;
  * @see McpDiscoveryService
  * @see ResourceRegistry
  * @see ActionRegistry
+ * @see TenantSessionInterceptor
  */
 final readonly class McpExecutionService
 {
     public function __construct(
         private ResourceRegistry $resourceRegistry,
         private ActionRegistry $actionRegistry,
+        private ?TenantSessionInterceptor $interceptor = null,
     ) {
     }
 
@@ -52,6 +55,17 @@ final readonly class McpExecutionService
      */
     public function callTool(string $toolName, array $arguments): array
     {
+        // OOB-CA (V0.16): intercept calls that carry _mcp_context_token BEFORE tenant extraction.
+        // - No token → null (pass-through, no-op).
+        // - PENDING/DENIED/invalid → array (short-circuit ActionResult — action does not run).
+        // - ACTIVE → null ($arguments['tenant'] mutated to JWT-authorised tenant_id).
+        if (null !== $this->interceptor) {
+            $interceptorResult = $this->interceptor->intercept($arguments);
+            if (null !== $interceptorResult) {
+                return $interceptorResult;
+            }
+        }
+
         // ADR 3.4 step 1: extract tenant.
         $tenantId = \is_string($arguments['tenant'] ?? null)
             ? (string) $arguments['tenant']

@@ -55,6 +55,25 @@ final class ActionRegistry
     }
 
     /**
+     * Check whether an action of the given class is registered.
+     *
+     * Used by McpDiscoveryService to skip operations whose action class was not
+     * wired into the DI container (e.g. Doctrine-dependent actions in non-Vault contexts).
+     *
+     * @param class-string $className
+     */
+    public function hasByClass(string $className): bool
+    {
+        foreach ($this->actions as $action) {
+            if ($action instanceof $className) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Return a filtered subset of the registry.
      *
      * @param string|null $connector Filter by plugin_name prefix (e.g. 'shopware6' matches 'shopware6:*')

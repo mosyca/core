@@ -79,3 +79,26 @@ services:
     Mosyca\Core\Vault\Console\GenerateMcpTokenCommand: ~
     Mosyca\Core\Vault\Console\ListOperatorsCommand: ~
     Mosyca\Core\Vault\Console\SetClearanceCommand: ~
+
+    # ── V0.16: OOB-CA Tenant Session Gate ────────────────────────────────────
+    # Provides a human-in-the-loop gate for MCP tenant context switches.
+    # All services here require DoctrineBundle (loaded conditionally).
+
+    Mosyca\Core\Bridge\TenantSession\TenantSessionRepository: ~
+
+    Mosyca\Core\Bridge\TenantSession\TenantSessionApprovalUrlGenerator: ~
+
+    Mosyca\Core\Bridge\TenantSession\TenantSessionInterceptor: ~
+
+    # AssumeTenantAction requires Doctrine (TenantSessionRepository) and Lexik JWT.
+    # Registered here (DoctrineBundle-conditional) so it is only wired when the DB is available.
+    Mosyca\Core\Action\Builtin\AssumeTenantAction: ~
+
+    # Approval UI controller.
+    Mosyca\Core\Bridge\Controller\TenantSessionApprovalController: ~
+
+    # Wire TenantSessionInterceptor into McpExecutionService.
+    # Overrides the base definition from services.yaml (which has $interceptor = null by default).
+    Mosyca\Core\Bridge\McpExecutionService:
+        arguments:
+            $interceptor: '@Mosyca\Core\Bridge\TenantSession\TenantSessionInterceptor'

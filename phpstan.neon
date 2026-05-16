@@ -8,3 +8,5 @@ parameters:
         # Doctrine assigns entity IDs via reflection — PHPStan cannot see the int assignment.
         - identifier: property.unusedType
           path: src/Vault/Entity/
+        - identifier: property.unusedType
+          path: src/Bridge/TenantSession/

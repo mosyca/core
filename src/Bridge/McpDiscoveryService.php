@@ -57,6 +57,13 @@ final readonly class McpDiscoveryService
                 // ADR 3.2: flat tool name
                 $toolName = $ns.'_'.$resName.'_'.$opSlug;
 
+                // Skip operations whose action class was not registered in the DI container.
+                // This happens when an action has infrastructure dependencies (e.g. Doctrine)
+                // that are absent in the current environment (e.g. test kernels without DoctrineBundle).
+                if (!$this->actionRegistry->hasByClass($opDef['action'])) {
+                    continue;
+                }
+
                 // Resolve the live Action instance by its FQCN (same as REST gateway).
                 $action = $this->actionRegistry->getByClass($opDef['action']);
 
