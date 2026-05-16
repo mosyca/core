@@ -26,6 +26,17 @@ services:
     Mosyca\Core\Vault\VaultManager: ~
     Mosyca\Core\Vault\Console\SetVaultSecretCommand: ~
 
+    # ── V0.14c: VaultAwareHttpClient ─────────────────────────────────────────
+    # Decorates the Symfony http_client service with Vault-backed token injection.
+    # $allowedUris: empty by default — connector plugins populate this via
+    #               compiler passes or config extension (one array per integration).
+    # $refreshers:  auto-collected from services tagged mosyca.vault.refresher.
+    Mosyca\Core\Vault\Http\VaultAwareHttpClient:
+        arguments:
+            $inner: '@http_client'
+            $allowedUris: []
+            $refreshers: !tagged_iterator mosyca.vault.refresher
+
     # ── V0.7: Operator Authentication & MCP Tokens ───────────────────────────
     Mosyca\Core\Vault\Repository\OperatorRepository: ~
     Mosyca\Core\Vault\Repository\McpTokenRepository: ~
