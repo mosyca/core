@@ -79,6 +79,7 @@ services:
     Mosyca\Core\Vault\Console\GenerateMcpTokenCommand: ~
     Mosyca\Core\Vault\Console\ListOperatorsCommand: ~
     Mosyca\Core\Vault\Console\SetClearanceCommand: ~
+    Mosyca\Core\Vault\Console\VaultCleanupCommand: ~
 
     # ── V0.16: OOB-CA Tenant Session Gate ────────────────────────────────────
     # Provides a human-in-the-loop gate for MCP tenant context switches.

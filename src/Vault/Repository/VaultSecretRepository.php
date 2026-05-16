@@ -51,4 +51,56 @@ class VaultSecretRepository extends ServiceEntityRepository
             $this->getEntityManager()->flush();
         }
     }
+
+    /**
+     * Find all secrets whose integration_type is NOT in the given active set.
+     *
+     * Used by VaultCleanupCommand to discover orphaned secrets after a plugin
+     * is uninstalled. Returns an empty array when $activeIntegrationTypes is
+     * empty (safety guard — never marks everything as orphaned).
+     *
+     * @param string[]    $activeIntegrationTypes Namespaces currently in ActionRegistry
+     * @param string|null $tenantId               Optional tenant scope
+     *
+     * @return VaultSecret[]
+     */
+    public function findOrphaned(array $activeIntegrationTypes, ?string $tenantId = null): array
+    {
+        if ([] === $activeIntegrationTypes) {
+            return [];
+        }
+
+        $qb = $this->createQueryBuilder('s')
+            ->where('s.integrationType NOT IN (:activeTypes)')
+            ->setParameter('activeTypes', $activeIntegrationTypes)
+            ->orderBy('s.tenantId', 'ASC')
+            ->addOrderBy('s.integrationType', 'ASC');
+
+        if (null !== $tenantId) {
+            $qb->andWhere('s.tenantId = :tenantId')
+                ->setParameter('tenantId', $tenantId);
+        }
+
+        /** @var VaultSecret[] $result */
+        $result = $qb->getQuery()->getResult();
+
+        return $result;
+    }
+
+    /**
+     * Remove all given secrets in a single batched flush.
+     *
+     * Prefer this over calling delete() in a loop when removing multiple secrets
+     * at once (GC path) to avoid one flush per entity.
+     *
+     * @param VaultSecret[] $secrets
+     */
+    public function deleteMany(array $secrets): void
+    {
+        $em = $this->getEntityManager();
+        foreach ($secrets as $secret) {
+            $em->remove($secret);
+        }
+        $em->flush();
+    }
 }
