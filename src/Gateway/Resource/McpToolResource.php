@@ -20,7 +20,7 @@ use Mosyca\Core\Gateway\Provider\McpToolProvider;
  * call payload at execution time (not at discovery time).
  *
  * The tool name uses underscores instead of colons/hyphens so it is a valid
- * MCP tool identifier: core:system:ping → core_system_ping.
+ * MCP tool identifier: mosyca:system:ping → mosyca_system_ping.
  */
 #[ApiResource(
     shortName: 'McpTool',
@@ -40,7 +40,7 @@ final class McpToolResource
     /**
      * MCP tool name — colons and hyphens replaced with underscores.
      *
-     * Example: core_system_ping
+     * Example: mosyca_system_ping
      */
     #[ApiProperty(identifier: true)]
     public string $name = '';

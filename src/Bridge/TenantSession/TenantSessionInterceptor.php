@@ -56,7 +56,7 @@ class TenantSessionInterceptor
             return ActionResult::failure(
                 'Invalid tenant context token.',
                 'OOBCA_INVALID_TOKEN',
-                'Call core_system_assume_tenant to obtain a new tenant session token.',
+                'Call mosyca_system_assume_tenant to obtain a new tenant session token.',
             )->toArray();
         }
 
@@ -69,14 +69,14 @@ class TenantSessionInterceptor
                 return ActionResult::failure(
                     'Tenant context token has expired.',
                     'OOBCA_TOKEN_EXPIRED',
-                    'Call core_system_assume_tenant to obtain a new tenant session token.',
+                    'Call mosyca_system_assume_tenant to obtain a new tenant session token.',
                 )->toArray();
             }
 
             return ActionResult::failure(
                 'Tenant context token is invalid.',
                 'OOBCA_INVALID_TOKEN',
-                'Call core_system_assume_tenant to obtain a new tenant session token.',
+                'Call mosyca_system_assume_tenant to obtain a new tenant session token.',
             )->toArray();
         }
 
@@ -87,7 +87,7 @@ class TenantSessionInterceptor
             return ActionResult::failure(
                 'Tenant context token is missing required claims.',
                 'OOBCA_INVALID_TOKEN',
-                'Call core_system_assume_tenant to obtain a new tenant session token.',
+                'Call mosyca_system_assume_tenant to obtain a new tenant session token.',
             )->toArray();
         }
 
@@ -97,7 +97,7 @@ class TenantSessionInterceptor
             return ActionResult::failure(
                 'Tenant session not found.',
                 'OOBCA_SESSION_NOT_FOUND',
-                'Call core_system_assume_tenant to obtain a new tenant session token.',
+                'Call mosyca_system_assume_tenant to obtain a new tenant session token.',
             )->toArray();
         }
 
@@ -107,7 +107,7 @@ class TenantSessionInterceptor
             return ActionResult::failure(
                 'Tenant session has expired without approval.',
                 'OOBCA_TOKEN_EXPIRED',
-                'Call core_system_assume_tenant to obtain a new tenant session token.',
+                'Call mosyca_system_assume_tenant to obtain a new tenant session token.',
             )->toArray();
         }
 
@@ -122,7 +122,7 @@ class TenantSessionInterceptor
             return ActionResult::failure(
                 \sprintf('Tenant session for "%s" was denied by the operator.', $tenantId),
                 'OOBCA_SESSION_DENIED',
-                'The operator denied this tenant context switch. Call core_system_assume_tenant to request a new session.',
+                'The operator denied this tenant context switch. Call mosyca_system_assume_tenant to request a new session.',
             )->toArray();
         }
 

@@ -239,7 +239,7 @@ final class McpRpcControllerTest extends TestCase
 
         self::assertIsArray($data['result']['tools']);
         $names = array_column($data['result']['tools'], 'name');
-        self::assertContains('core_system_ping', $names);
+        self::assertContains('mosyca_system_ping', $names);
     }
 
     public function testListToolsIncludesCoreSystemEcho(): void
@@ -247,7 +247,7 @@ final class McpRpcControllerTest extends TestCase
         $data = $this->call(['jsonrpc' => '2.0', 'id' => 1, 'method' => 'tools/list']);
 
         $names = array_column($data['result']['tools'], 'name');
-        self::assertContains('core_system_echo', $names);
+        self::assertContains('mosyca_system_echo', $names);
     }
 
     public function testListToolsPreservesRequestId(): void
@@ -277,7 +277,7 @@ final class McpRpcControllerTest extends TestCase
             'jsonrpc' => '2.0',
             'id' => 2,
             'method' => 'tools/call',
-            'params' => ['name' => 'core_system_ping', 'arguments' => ['tenant' => 'default']],
+            'params' => ['name' => 'mosyca_system_ping', 'arguments' => ['tenant' => 'default']],
         ]);
 
         self::assertIsArray($data);
@@ -293,7 +293,7 @@ final class McpRpcControllerTest extends TestCase
             'jsonrpc' => '2.0',
             'id' => 2,
             'method' => 'tools/call',
-            'params' => ['name' => 'core_system_ping', 'arguments' => ['tenant' => 'default']],
+            'params' => ['name' => 'mosyca_system_ping', 'arguments' => ['tenant' => 'default']],
         ]);
 
         $content = $data['result']['content'];
@@ -308,7 +308,7 @@ final class McpRpcControllerTest extends TestCase
             'jsonrpc' => '2.0',
             'id' => 2,
             'method' => 'tools/call',
-            'params' => ['name' => 'core_system_ping', 'arguments' => ['tenant' => 'default']],
+            'params' => ['name' => 'mosyca_system_ping', 'arguments' => ['tenant' => 'default']],
         ]);
 
         $decoded = json_decode($data['result']['content'][0]['text'], true);
@@ -324,7 +324,7 @@ final class McpRpcControllerTest extends TestCase
             'id' => 3,
             'method' => 'tools/call',
             'params' => [
-                'name' => 'core_system_echo',
+                'name' => 'mosyca_system_echo',
                 'arguments' => ['tenant' => 'default', 'message' => 'hello bridge'],
             ],
         ]);
@@ -342,7 +342,7 @@ final class McpRpcControllerTest extends TestCase
             'jsonrpc' => '2.0',
             'id' => 4,
             'method' => 'tools/call',
-            'params' => ['name' => 'core_system_ping', 'arguments' => []],
+            'params' => ['name' => 'mosyca_system_ping', 'arguments' => []],
         ]);
 
         self::assertArrayHasKey('result', $data);

@@ -185,7 +185,7 @@ final class AssumeTenantActionTest extends TestCase
     #[Test]
     public function actionNameFollowsConvention(): void
     {
-        self::assertSame('core:system:assume_tenant', $this->makeAction()->getName());
+        self::assertSame('mosyca:system:assume_tenant', $this->makeAction()->getName());
     }
 
     #[Test]

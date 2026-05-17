@@ -102,7 +102,7 @@ final class ActionResource
     /**
      * Full canonical action name — convenience field, not a URL identifier.
      *
-     * Example: core:system:ping
+     * Example: mosyca:system:ping
      */
     #[ApiProperty(identifier: false, description: 'Full action name (plugin_name:resource:action).')]
     public string $name = '';

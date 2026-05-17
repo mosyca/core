@@ -32,14 +32,14 @@ final class ActionCommandTest extends TestCase
 
     public function testCommandNameMatchesAction(): void
     {
-        $command = $this->buildCommand($this->stubAction('core:system:ping'));
+        $command = $this->buildCommand($this->stubAction('mosyca:system:ping'));
 
-        self::assertSame('core:system:ping', $command->getName());
+        self::assertSame('mosyca:system:ping', $command->getName());
     }
 
     public function testCommandDescriptionMatchesAction(): void
     {
-        $action = $this->stubAction('core:system:ping', description: 'Sends a ping');
+        $action = $this->stubAction('mosyca:system:ping', description: 'Sends a ping');
         $command = $this->buildCommand($action);
 
         self::assertSame('Sends a ping', $command->getDescription());
@@ -47,7 +47,7 @@ final class ActionCommandTest extends TestCase
 
     public function testCommandHasFormatAndTemplateOptions(): void
     {
-        $command = $this->buildCommand($this->stubAction('core:system:ping'));
+        $command = $this->buildCommand($this->stubAction('mosyca:system:ping'));
 
         self::assertTrue($command->getDefinition()->hasOption('format'));
         self::assertTrue($command->getDefinition()->hasOption('template'));
@@ -56,7 +56,7 @@ final class ActionCommandTest extends TestCase
 
     public function testActionParametersBecomeCLIOptions(): void
     {
-        $action = $this->stubAction('core:system:echo', parameters: [
+        $action = $this->stubAction('mosyca:system:echo', parameters: [
             'message' => ['type' => 'string', 'description' => 'Echo message', 'required' => true],
         ]);
         $command = $this->buildCommand($action);
@@ -67,7 +67,7 @@ final class ActionCommandTest extends TestCase
     public function testExecuteRendersSuccessfulResult(): void
     {
         $result = ActionResult::ok(['pong' => 'pong'], '✅ pong');
-        $action = $this->stubAction('core:system:ping', result: $result);
+        $action = $this->stubAction('mosyca:system:ping', result: $result);
 
         $renderer = $this->createMock(OutputRendererInterface::class);
         $renderer->expects(self::once())
@@ -85,7 +85,7 @@ final class ActionCommandTest extends TestCase
     public function testExecuteReturnsFailureOnActionError(): void
     {
         $result = ActionResult::error('Something went wrong');
-        $action = $this->stubAction('core:system:ping', result: $result);
+        $action = $this->stubAction('mosyca:system:ping', result: $result);
 
         $renderer = $this->createMock(OutputRendererInterface::class);
         $renderer->method('render')->willReturn('{"success":false}');
@@ -99,7 +99,7 @@ final class ActionCommandTest extends TestCase
     public function testExecutePassesFormatOption(): void
     {
         $result = ActionResult::ok([], 'ok');
-        $action = $this->stubAction('core:system:ping', result: $result);
+        $action = $this->stubAction('mosyca:system:ping', result: $result);
 
         $renderer = $this->createMock(OutputRendererInterface::class);
         $renderer->expects(self::once())
@@ -113,7 +113,7 @@ final class ActionCommandTest extends TestCase
 
     public function testRequiredParamMissingReturnsInvalid(): void
     {
-        $action = $this->stubAction('core:system:echo', parameters: [
+        $action = $this->stubAction('mosyca:system:echo', parameters: [
             'message' => ['type' => 'string', 'description' => 'The message', 'required' => true],
         ]);
 
@@ -202,7 +202,7 @@ final class ActionCommandTest extends TestCase
     {
         $result = ActionResult::ok([], 'ok');
         $action = $this->createMock(ActionInterface::class);
-        $action->method('getName')->willReturn('core:system:ping');
+        $action->method('getName')->willReturn('mosyca:system:ping');
         $action->method('getDescription')->willReturn('Ping');
         $action->method('getUsage')->willReturn('Ping');
         $action->method('getParameters')->willReturn([]);

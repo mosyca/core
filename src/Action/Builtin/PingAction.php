@@ -17,7 +17,7 @@ final class PingAction implements TemplateAwareActionInterface
 
     public function getName(): string
     {
-        return 'core:system:ping';
+        return 'mosyca:system:ping';
     }
 
     public function getDescription(): string

@@ -55,7 +55,7 @@ final class AssumeTenantAction implements ActionInterface
 
     public function getName(): string
     {
-        return 'core:system:assume_tenant';
+        return 'mosyca:system:assume_tenant';
     }
 
     public function getDescription(): string

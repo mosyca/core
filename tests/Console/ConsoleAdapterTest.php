@@ -29,10 +29,10 @@ final class ConsoleAdapterTest extends TestCase
 
     public function testGetNamesReturnsRegisteredActionNames(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping'));
-        $this->registry->register($this->makeAction('core:system:echo'));
+        $this->registry->register($this->makeAction('mosyca:system:ping'));
+        $this->registry->register($this->makeAction('mosyca:system:echo'));
 
-        self::assertSame(['core:system:ping', 'core:system:echo'], $this->adapter->getNames());
+        self::assertSame(['mosyca:system:ping', 'mosyca:system:echo'], $this->adapter->getNames());
     }
 
     public function testGetNamesIsEmptyWithNoActions(): void
@@ -42,9 +42,9 @@ final class ConsoleAdapterTest extends TestCase
 
     public function testHasReturnsTrueForRegisteredAction(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping'));
+        $this->registry->register($this->makeAction('mosyca:system:ping'));
 
-        self::assertTrue($this->adapter->has('core:system:ping'));
+        self::assertTrue($this->adapter->has('mosyca:system:ping'));
     }
 
     public function testHasReturnsFalseForUnknownAction(): void
@@ -54,12 +54,12 @@ final class ConsoleAdapterTest extends TestCase
 
     public function testGetReturnsActionCommand(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping'));
+        $this->registry->register($this->makeAction('mosyca:system:ping'));
 
-        $command = $this->adapter->get('core:system:ping');
+        $command = $this->adapter->get('mosyca:system:ping');
 
         self::assertInstanceOf(ActionCommand::class, $command);
-        self::assertSame('core:system:ping', $command->getName());
+        self::assertSame('mosyca:system:ping', $command->getName());
     }
 
     public function testGetThrowsCommandNotFoundException(): void

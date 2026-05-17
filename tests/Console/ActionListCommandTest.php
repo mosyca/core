@@ -23,28 +23,28 @@ final class ActionListCommandTest extends TestCase
 
     public function testListShowsAllActions(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ['core']));
-        $this->registry->register($this->makeAction('core:system:echo', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:echo', ['core']));
 
         $tester = new CommandTester(new ActionListCommand($this->registry));
         $exitCode = $tester->execute([]);
 
         self::assertSame(Command::SUCCESS, $exitCode);
-        self::assertStringContainsString('core:system:ping', $tester->getDisplay());
-        self::assertStringContainsString('core:system:echo', $tester->getDisplay());
+        self::assertStringContainsString('mosyca:system:ping', $tester->getDisplay());
+        self::assertStringContainsString('mosyca:system:echo', $tester->getDisplay());
         self::assertStringContainsString('2 action(s)', $tester->getDisplay());
     }
 
     public function testListFiltersByTag(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ['core']));
         $this->registry->register($this->makeAction('shopware:order:list', ['ecommerce', 'shopware']));
 
         $tester = new CommandTester(new ActionListCommand($this->registry));
         $tester->execute(['--tag' => 'ecommerce']);
 
         self::assertStringContainsString('shopware:order:list', $tester->getDisplay());
-        self::assertStringNotContainsString('core:system:ping', $tester->getDisplay());
+        self::assertStringNotContainsString('mosyca:system:ping', $tester->getDisplay());
     }
 
     public function testListShowsWarningWhenNoActionsRegistered(): void
@@ -58,7 +58,7 @@ final class ActionListCommandTest extends TestCase
 
     public function testListShowsWarningWhenTagMatchesNothing(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ['core']));
 
         $tester = new CommandTester(new ActionListCommand($this->registry));
         $tester->execute(['--tag' => 'nonexistent']);

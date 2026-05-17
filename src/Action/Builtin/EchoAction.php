@@ -17,7 +17,7 @@ final class EchoAction implements TemplateAwareActionInterface
 
     public function getName(): string
     {
-        return 'core:system:echo';
+        return 'mosyca:system:echo';
     }
 
     public function getDescription(): string

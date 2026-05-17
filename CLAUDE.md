@@ -44,8 +44,8 @@ src/
     Attribute/
       AsAction.php                ← PHP 8 attribute (used by bundle auto-discovery)
     Builtin/
-      PingAction.php              ← core:system:ping
-      EchoAction.php              ← core:system:echo
+      PingAction.php              ← mosyca:system:ping
+      EchoAction.php              ← mosyca:system:echo
 
   DependencyInjection/
     MosycaCoreExtension.php
@@ -179,7 +179,7 @@ php examples/run.php
 ## Conventions
 
 **Action naming:** `{plugin}:{resource}:{action}` — all lowercase, hyphens allowed.
-Example: `shopware:order:get-margin`, `core:system:ping`
+Example: `shopware:order:get-margin`, `mosyca:system:ping`
 
 **ActionResult:** Always return `ActionResult::ok()` or `ActionResult::failure()`.
 Never throw exceptions for business errors. `ActionResult::error()` is deprecated.

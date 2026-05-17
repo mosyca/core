@@ -39,8 +39,8 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         $adapter = self::getContainer()->get(ConsoleAdapter::class);
         $names = $adapter->getNames();
 
-        self::assertContains('core:system:ping', $names);
-        self::assertContains('core:system:echo', $names);
+        self::assertContains('mosyca:system:ping', $names);
+        self::assertContains('mosyca:system:echo', $names);
     }
 
     public function testAdapterBuildsActionCommandForPing(): void
@@ -49,10 +49,10 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         /** @var ConsoleAdapter $adapter */
         $adapter = self::getContainer()->get(ConsoleAdapter::class);
 
-        $command = $adapter->get('core:system:ping');
+        $command = $adapter->get('mosyca:system:ping');
 
         self::assertInstanceOf(ActionCommand::class, $command);
-        self::assertSame('core:system:ping', $command->getName());
+        self::assertSame('mosyca:system:ping', $command->getName());
     }
 
     public function testActionListCommandRunsInApplication(): void
@@ -65,8 +65,8 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         $exitCode = $tester->execute([]);
 
         self::assertSame(0, $exitCode);
-        self::assertStringContainsString('core:system:ping', $tester->getDisplay());
-        self::assertStringContainsString('core:system:echo', $tester->getDisplay());
+        self::assertStringContainsString('mosyca:system:ping', $tester->getDisplay());
+        self::assertStringContainsString('mosyca:system:echo', $tester->getDisplay());
     }
 
     public function testActionShowCommandRunsInApplication(): void
@@ -76,10 +76,10 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         $application->setAutoExit(false);
 
         $tester = new CommandTester($application->find('mosyca:action:show'));
-        $exitCode = $tester->execute(['name' => 'core:system:ping']);
+        $exitCode = $tester->execute(['name' => 'mosyca:system:ping']);
 
         self::assertSame(0, $exitCode);
-        self::assertStringContainsString('core:system:ping', $tester->getDisplay());
+        self::assertStringContainsString('mosyca:system:ping', $tester->getDisplay());
         self::assertStringContainsString('pong', $tester->getDisplay());
     }
 
@@ -89,7 +89,7 @@ final class ConsoleAdapterFunctionalTest extends KernelTestCase
         $application = new Application($kernel);
         $application->setAutoExit(false);
 
-        $tester = new CommandTester($application->find('core:system:ping'));
+        $tester = new CommandTester($application->find('mosyca:system:ping'));
         $exitCode = $tester->execute(['--format' => 'json']);
 
         self::assertSame(0, $exitCode);

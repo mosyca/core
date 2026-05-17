@@ -23,7 +23,7 @@ final class ActionShowCommand extends Command
 
     protected function configure(): void
     {
-        $this->addArgument('name', InputArgument::REQUIRED, 'Action name (e.g. core:system:ping)');
+        $this->addArgument('name', InputArgument::REQUIRED, 'Action name (e.g. mosyca:system:ping)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int

@@ -10,32 +10,32 @@ use Mosyca\Core\Action\Builtin\PingAction;
 use Mosyca\Core\Resource\AbstractResource;
 
 /**
- * Built-in system resource — exposes the core health-check actions.
+ * Built-in system resource — exposes the mosyca framework health-check actions.
  *
- * Compound key: "core:system"
+ * Compound key: "mosyca:system"
  *
  * ## Channel exposure
  *
  *   REST:
- *     GET  /api/v1/core/{tenant}/system/ping          → PingAction
- *     POST /api/v1/core/{tenant}/system/echo          → EchoAction
- *     POST /api/v1/core/{tenant}/system/assume-tenant → AssumeTenantAction
+ *     GET  /api/v1/mosyca/{tenant}/system/ping          → PingAction
+ *     POST /api/v1/mosyca/{tenant}/system/echo          → EchoAction
+ *     POST /api/v1/mosyca/{tenant}/system/assume-tenant → AssumeTenantAction
  *
  *   MCP tools:
- *     core_system_ping
- *     core_system_echo
- *     core_system_assume_tenant
+ *     mosyca_system_ping
+ *     mosyca_system_echo
+ *     mosyca_system_assume_tenant
  *
  *   CLI commands:
- *     bin/console core:system:ping
- *     bin/console core:system:echo
- *     bin/console core:system:assume_tenant
+ *     bin/console mosyca:system:ping
+ *     bin/console mosyca:system:echo
+ *     bin/console mosyca:system:assume_tenant
  */
 final class SystemResource extends AbstractResource
 {
     public function getPluginNamespace(): string
     {
-        return 'core';
+        return 'mosyca';
     }
 
     public function getName(): string
@@ -57,18 +57,18 @@ final class SystemResource extends AbstractResource
             'ping' => [
                 'action' => PingAction::class,
                 'method' => 'GET',
-                'path' => '/ping',            // → GET  /api/v1/core/{tenant}/system/ping
+                'path' => '/ping',            // → GET  /api/v1/mosyca/{tenant}/system/ping
             ],
             'echo' => [
                 'action' => EchoAction::class,
                 'method' => 'POST',
-                'path' => '/echo',            // → POST /api/v1/core/{tenant}/system/echo
+                'path' => '/echo',            // → POST /api/v1/mosyca/{tenant}/system/echo
             ],
             'assume_tenant' => [
                 'action' => AssumeTenantAction::class,
                 'method' => 'POST',
-                'path' => '/assume-tenant',   // → POST /api/v1/core/{tenant}/system/assume-tenant
-            ],                                //   MCP: core_system_assume_tenant
+                'path' => '/assume-tenant',   // → POST /api/v1/mosyca/{tenant}/system/assume-tenant
+            ],                                //   MCP: mosyca_system_assume_tenant
         ];
     }
 }

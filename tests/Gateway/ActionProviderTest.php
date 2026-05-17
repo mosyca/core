@@ -26,8 +26,8 @@ final class ActionProviderTest extends TestCase
 
     public function testCollectionReturnsAllActions(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ['core']));
-        $this->registry->register($this->makeAction('core:system:echo', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:echo', ['core']));
 
         $result = $this->provider->provide(new GetCollection());
 
@@ -39,7 +39,7 @@ final class ActionProviderTest extends TestCase
 
     public function testCollectionFiltersByTag(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ['core']));
         $this->registry->register($this->makeAction('shopware:order:list', ['ecommerce']));
 
         $result = $this->provider->provide(new GetCollection(), context: ['filters' => ['tag' => 'ecommerce']]);
@@ -51,7 +51,7 @@ final class ActionProviderTest extends TestCase
 
     public function testCollectionFiltersByConnector(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ['core']));
         $this->registry->register($this->makeAction('shopware:order:list', ['ecommerce']));
 
         $result = $this->provider->provide(new GetCollection(), context: ['filters' => ['connector' => 'shopware']]);
@@ -63,7 +63,7 @@ final class ActionProviderTest extends TestCase
 
     public function testCollectionFiltersByMutating(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', [], mutating: false));
+        $this->registry->register($this->makeAction('mosyca:system:ping', [], mutating: false));
         $this->registry->register($this->makeAction('core:data:delete', [], mutating: true));
 
         $result = $this->provider->provide(new GetCollection(), context: ['filters' => ['mutating' => 'true']]);
@@ -75,16 +75,16 @@ final class ActionProviderTest extends TestCase
 
     public function testItemReturnsActionResource(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ['core']));
 
         $result = $this->provider->provide(
             new Get(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
         );
 
         self::assertInstanceOf(ActionResource::class, $result);
-        self::assertSame('core:system:ping', $result->name);
-        self::assertSame('core', $result->plugin_name);
+        self::assertSame('mosyca:system:ping', $result->name);
+        self::assertSame('mosyca', $result->plugin_name);
         self::assertSame('system', $result->resource);
         self::assertSame('ping', $result->action);
     }
@@ -101,14 +101,14 @@ final class ActionProviderTest extends TestCase
 
     public function testItemIncludesFullDetails(): void
     {
-        $action = $this->makeAction('core:system:ping', ['core'], parameters: [
+        $action = $this->makeAction('mosyca:system:ping', ['core'], parameters: [
             'message' => ['type' => 'string', 'description' => 'A message', 'required' => false],
         ]);
         $this->registry->register($action);
 
         $result = $this->provider->provide(
             new Get(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
         );
 
         self::assertInstanceOf(ActionResource::class, $result);
@@ -120,7 +120,7 @@ final class ActionProviderTest extends TestCase
 
     public function testCollectionItemsDoNotIncludeUsage(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ['core']));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ['core']));
 
         $results = $this->provider->provide(new GetCollection());
 
@@ -142,7 +142,7 @@ final class ActionProviderTest extends TestCase
 
     public function testJsonSchemaBuiltFromParameters(): void
     {
-        $action = $this->makeAction('core:system:test', [], parameters: [
+        $action = $this->makeAction('mosyca:system:test', [], parameters: [
             'limit' => ['type' => 'integer', 'description' => 'Page size', 'required' => true],
             'active' => ['type' => 'boolean', 'required' => false],
         ]);
@@ -150,7 +150,7 @@ final class ActionProviderTest extends TestCase
 
         $result = $this->provider->provide(
             new Get(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'test'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'test'],
         );
 
         self::assertInstanceOf(ActionResource::class, $result);

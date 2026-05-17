@@ -50,8 +50,8 @@ final class McpDiscoveryServiceTest extends TestCase
         $tools = $this->service->listTools();
         $names = array_column($tools, 'name');
 
-        self::assertContains('core_system_ping', $names);
-        self::assertContains('core_system_echo', $names);
+        self::assertContains('mosyca_system_ping', $names);
+        self::assertContains('mosyca_system_echo', $names);
     }
 
     public function testListToolsIncludesDescription(): void
@@ -59,8 +59,8 @@ final class McpDiscoveryServiceTest extends TestCase
         $tools = $this->service->listTools();
         $byName = array_column($tools, null, 'name');
 
-        self::assertArrayHasKey('core_system_ping', $byName);
-        self::assertNotEmpty($byName['core_system_ping']['description']);
+        self::assertArrayHasKey('mosyca_system_ping', $byName);
+        self::assertNotEmpty($byName['mosyca_system_ping']['description']);
     }
 
     public function testListToolsIncludesInputSchema(): void
@@ -68,8 +68,8 @@ final class McpDiscoveryServiceTest extends TestCase
         $tools = $this->service->listTools();
         $byName = array_column($tools, null, 'name');
 
-        self::assertArrayHasKey('inputSchema', $byName['core_system_ping']);
-        self::assertSame('object', $byName['core_system_ping']['inputSchema']['type']);
+        self::assertArrayHasKey('inputSchema', $byName['mosyca_system_ping']);
+        self::assertSame('object', $byName['mosyca_system_ping']['inputSchema']['type']);
     }
 
     public function testListToolsInjectsTenantInEverySchema(): void
@@ -97,10 +97,10 @@ final class McpDiscoveryServiceTest extends TestCase
         $tools = $this->service->listTools(['default', 'shop-berlin']);
         $byName = array_column($tools, null, 'name');
 
-        self::assertIsArray($byName['core_system_ping']['inputSchema']['properties']['tenant']['enum']);
+        self::assertIsArray($byName['mosyca_system_ping']['inputSchema']['properties']['tenant']['enum']);
         self::assertSame(
             ['default', 'shop-berlin'],
-            $byName['core_system_ping']['inputSchema']['properties']['tenant']['enum'],
+            $byName['mosyca_system_ping']['inputSchema']['properties']['tenant']['enum'],
         );
     }
 
@@ -109,9 +109,9 @@ final class McpDiscoveryServiceTest extends TestCase
         $tools = $this->service->listTools();
         $byName = array_column($tools, null, 'name');
 
-        self::assertArrayHasKey('core_system_echo', $byName);
-        self::assertArrayHasKey('message', $byName['core_system_echo']['inputSchema']['properties']);
-        self::assertContains('message', $byName['core_system_echo']['inputSchema']['required']);
+        self::assertArrayHasKey('mosyca_system_echo', $byName);
+        self::assertArrayHasKey('message', $byName['mosyca_system_echo']['inputSchema']['properties']);
+        self::assertContains('message', $byName['mosyca_system_echo']['inputSchema']['required']);
     }
 
     public function testPingToolHasOptionalMessageParam(): void
@@ -119,10 +119,10 @@ final class McpDiscoveryServiceTest extends TestCase
         $tools = $this->service->listTools();
         $byName = array_column($tools, null, 'name');
 
-        self::assertArrayHasKey('core_system_ping', $byName);
-        self::assertArrayHasKey('message', $byName['core_system_ping']['inputSchema']['properties']);
+        self::assertArrayHasKey('mosyca_system_ping', $byName);
+        self::assertArrayHasKey('message', $byName['mosyca_system_ping']['inputSchema']['properties']);
         // PingAction.message is optional — should NOT be in required
-        self::assertNotContains('message', $byName['core_system_ping']['inputSchema']['required']);
+        self::assertNotContains('message', $byName['mosyca_system_ping']['inputSchema']['required']);
     }
 
     public function testEmptyRegistriesReturnEmptyList(): void

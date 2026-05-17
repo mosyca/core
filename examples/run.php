@@ -21,6 +21,6 @@ $context = new ExecutionContext(
     aclBypassed: false,
 );
 
-$result = $registry->get('core:system:ping')->execute([], $context);
+$result = $registry->get('mosyca:system:ping')->execute([], $context);
 
 echo $result->summary.\PHP_EOL;

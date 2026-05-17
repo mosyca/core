@@ -25,7 +25,7 @@ use Mosyca\Core\Resource\ResourceRegistry;
  * ## Operation name convention
  *
  *   {pluginNamespace}_{resourceName}_{operationSlug}
- *   e.g. "core_system_ping", "shopware6_order_read"
+ *   e.g. "mosyca_system_ping", "shopware6_order_read"
  *
  * ## URI template convention
  *

@@ -33,7 +33,7 @@ final class McpExecutionServiceTest extends TestCase
 
     public function testCallToolPingReturnsSuccess(): void
     {
-        $result = $this->service->callTool('core_system_ping', ['tenant' => 'default']);
+        $result = $this->service->callTool('mosyca_system_ping', ['tenant' => 'default']);
 
         self::assertTrue($result['success']);
         self::assertSame('✅ pong', $result['summary']);
@@ -41,7 +41,7 @@ final class McpExecutionServiceTest extends TestCase
 
     public function testCallToolEchoReturnsEchoedMessage(): void
     {
-        $result = $this->service->callTool('core_system_echo', [
+        $result = $this->service->callTool('mosyca_system_echo', [
             'tenant' => 'default',
             'message' => 'Hello Architecture',
         ]);
@@ -54,7 +54,7 @@ final class McpExecutionServiceTest extends TestCase
     public function testCallToolRemovesTenantFromPayload(): void
     {
         // EchoAction returns $args as data — tenant must NOT appear in the result data.
-        $result = $this->service->callTool('core_system_echo', [
+        $result = $this->service->callTool('mosyca_system_echo', [
             'tenant' => 'default',
             'message' => 'hi',
         ]);
@@ -68,7 +68,7 @@ final class McpExecutionServiceTest extends TestCase
     {
         // PingAction returns data including echo of args — we verify the action ran
         // without tenant in args (it would fail if tenant was passed and validated).
-        $result = $this->service->callTool('core_system_ping', [
+        $result = $this->service->callTool('mosyca_system_ping', [
             'tenant' => 'shop-berlin',
             'message' => 'test',
         ]);
@@ -82,7 +82,7 @@ final class McpExecutionServiceTest extends TestCase
     public function testCallToolDefaultsTenantWhenMissing(): void
     {
         // No tenant in arguments — should default to 'default' without throwing.
-        $result = $this->service->callTool('core_system_ping', []);
+        $result = $this->service->callTool('mosyca_system_ping', []);
 
         self::assertTrue($result['success']);
     }
@@ -90,7 +90,7 @@ final class McpExecutionServiceTest extends TestCase
     public function testCallToolDefaultsTenantWhenNonString(): void
     {
         // Non-string tenant value — should fall back to 'default'.
-        $result = $this->service->callTool('core_system_ping', ['tenant' => 42]);
+        $result = $this->service->callTool('mosyca_system_ping', ['tenant' => 42]);
 
         self::assertTrue($result['success']);
     }
@@ -108,12 +108,12 @@ final class McpExecutionServiceTest extends TestCase
         // "core_system" matches no operation slug — must throw.
         $this->expectException(\InvalidArgumentException::class);
 
-        $this->service->callTool('core_system', ['tenant' => 'default']);
+        $this->service->callTool('mosyca_system', ['tenant' => 'default']);
     }
 
     public function testCallToolResultContainsStandardKeys(): void
     {
-        $result = $this->service->callTool('core_system_ping', ['tenant' => 'default']);
+        $result = $this->service->callTool('mosyca_system_ping', ['tenant' => 'default']);
 
         self::assertArrayHasKey('success', $result);
         self::assertArrayHasKey('summary', $result);

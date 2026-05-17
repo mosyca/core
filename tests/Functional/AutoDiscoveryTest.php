@@ -23,8 +23,8 @@ final class AutoDiscoveryTest extends KernelTestCase
         $registry = self::getContainer()->get(ActionRegistry::class);
 
         self::assertCount(2, $registry->all());
-        self::assertTrue($registry->has('core:system:ping'));
-        self::assertTrue($registry->has('core:system:echo'));
+        self::assertTrue($registry->has('mosyca:system:ping'));
+        self::assertTrue($registry->has('mosyca:system:echo'));
     }
 
     protected function tearDown(): void
@@ -44,7 +44,7 @@ final class AutoDiscoveryTest extends KernelTestCase
         $context->method('isAclBypassed')->willReturn(false);
         $context->method('getTenantId')->willReturn('default');
 
-        $result = $registry->get('core:system:ping')->execute([], $context);
+        $result = $registry->get('mosyca:system:ping')->execute([], $context);
 
         self::assertTrue($result->success);
         self::assertSame('✅ pong', $result->summary);

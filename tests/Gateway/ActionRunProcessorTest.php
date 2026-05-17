@@ -81,14 +81,14 @@ final class ActionRunProcessorTest extends TestCase
 
     public function testReturnsJsonResponseOnSuccess(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ActionResult::ok(['pong' => 'pong'], '✅ pong')));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ActionResult::ok(['pong' => 'pong'], '✅ pong')));
 
-        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/mosyca/default/system/ping/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
         $response = $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
 
@@ -102,14 +102,14 @@ final class ActionRunProcessorTest extends TestCase
         $renderer->method('render')->willReturn('{"success":false,"summary":"fail","data":null}');
         $processor = $this->makeProcessor(renderer: $renderer);
 
-        $this->registry->register($this->makeAction('core:system:fail', ActionResult::error('Something failed')));
+        $this->registry->register($this->makeAction('mosyca:system:fail', ActionResult::error('Something failed')));
 
-        $request = Request::create('/api/v1/core/default/system/fail/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/mosyca/default/system/fail/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
         $response = $processor->process(
             null,
             new Post(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'fail'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'fail'],
             context: ['request' => $request],
         );
 
@@ -119,7 +119,7 @@ final class ActionRunProcessorTest extends TestCase
     public function testPassesArgsToAction(): void
     {
         $action = $this->createMock(ActionInterface::class);
-        $action->method('getName')->willReturn('core:system:echo');
+        $action->method('getName')->willReturn('mosyca:system:echo');
         $action->method('getDefaultFormat')->willReturn('json');
         $action->method('getDefaultTemplate')->willReturn(null);
         $action->expects(self::once())
@@ -129,19 +129,19 @@ final class ActionRunProcessorTest extends TestCase
 
         $this->registry->register($action);
 
-        $request = Request::create('/api/v1/core/default/system/echo/run', 'POST', content: '{"args":{"message":"hello"}}');
+        $request = Request::create('/api/v1/mosyca/default/system/echo/run', 'POST', content: '{"args":{"message":"hello"}}');
         $request->attributes->set('tenant', 'default');
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'echo'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'echo'],
             context: ['request' => $request],
         );
     }
 
     public function testUsesFormatFromRequestBody(): void
     {
-        $action = $this->makeAction('core:system:ping', ActionResult::ok([], 'ok'));
+        $action = $this->makeAction('mosyca:system:ping', ActionResult::ok([], 'ok'));
         $this->registry->register($action);
 
         $renderer = $this->createMock(OutputRendererInterface::class);
@@ -151,25 +151,25 @@ final class ActionRunProcessorTest extends TestCase
             ->willReturn('success: true');
         $processor = $this->makeProcessor(renderer: $renderer);
 
-        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{},"_format":"yaml"}');
+        $request = Request::create('/api/v1/mosyca/default/system/ping/run', 'POST', content: '{"args":{},"_format":"yaml"}');
         $request->attributes->set('tenant', 'default');
         $processor->process(
             null,
             new Post(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
     }
 
     public function testWorksWithoutRequest(): void
     {
-        $this->registry->register($this->makeAction('core:system:ping', ActionResult::ok([], 'ok')));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ActionResult::ok([], 'ok')));
 
         // No request in context — should still work using action defaults.
         $response = $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
         );
 
         self::assertInstanceOf(Response::class, $response);
@@ -182,14 +182,14 @@ final class ActionRunProcessorTest extends TestCase
     {
         $this->accessLog->expects(self::once())->method('write');
 
-        $this->registry->register($this->makeAction('core:system:ping', ActionResult::ok([], 'pong')));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ActionResult::ok([], 'pong')));
 
-        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/mosyca/default/system/ping/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
     }
@@ -215,14 +215,14 @@ final class ActionRunProcessorTest extends TestCase
     {
         $this->actionLog->expects(self::never())->method('write');
 
-        $this->registry->register($this->makeAction('core:system:ping', ActionResult::ok([], 'pong')));
+        $this->registry->register($this->makeAction('mosyca:system:ping', ActionResult::ok([], 'pong')));
 
-        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/mosyca/default/system/ping/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
     }
@@ -234,14 +234,14 @@ final class ActionRunProcessorTest extends TestCase
         $result = ActionResult::ok(['count' => 5], 'done')
             ->withLedger(level: 'info', payload: ['item_count' => 5]);
 
-        $this->registry->register($this->makeAction('core:system:ping', $result));
+        $this->registry->register($this->makeAction('mosyca:system:ping', $result));
 
-        $request = Request::create('/api/v1/core/default/system/ping/run', 'POST', content: '{"args":{}}');
+        $request = Request::create('/api/v1/mosyca/default/system/ping/run', 'POST', content: '{"args":{}}');
         $request->attributes->set('tenant', 'default');
         $this->processor->process(
             null,
             new Post(),
-            uriVariables: ['plugin_name' => 'core', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
+            uriVariables: ['plugin_name' => 'mosyca', 'tenant' => 'default', 'resource' => 'system', 'action' => 'ping'],
             context: ['request' => $request],
         );
     }
