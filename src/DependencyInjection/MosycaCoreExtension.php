@@ -21,8 +21,33 @@ use Symfony\Component\DependencyInjection\Reference;
 
 final class MosycaCoreExtension extends Extension implements PrependExtensionInterface
 {
+    /**
+     * Makes `mosyca:` the Symfony config root key instead of the default `mosyca_core:`
+     * (which Symfony would derive from the class name MosycaCoreExtension).
+     * Required for `$container->extension('mosyca', [...])` in TestKernel and host apps.
+     */
+    public function getAlias(): string
+    {
+        return 'mosyca';
+    }
+
     public function load(array $configs, ContainerBuilder $container): void
     {
+        // Process the mosyca.identity configuration and expose it as container parameters
+        // so YAML providers can receive the compiled identity data via constructor injection.
+        $config = $this->processConfiguration(new Configuration(), $configs);
+
+        /** @var array<string, array{name: string, metadata?: array<string, mixed>}> $tenants */
+        $tenants = $config['identity']['tenants'] ?? [];
+        /** @var array<string, array{email: string, display_name?: string|null, groups?: string[], allowed_tenants?: string[]}> $users */
+        $users = $config['identity']['users'] ?? [];
+        /** @var array<string, array{roles?: string[], permissions?: string[]}> $groups */
+        $groups = $config['identity']['groups'] ?? [];
+
+        $container->setParameter('mosyca.identity.tenants', $tenants);
+        $container->setParameter('mosyca.identity.users', $users);
+        $container->setParameter('mosyca.identity.groups', $groups);
+
         $loader = new YamlFileLoader($container, new FileLocator(\dirname(__DIR__, 2).'/config'));
         $loader->load('services.yaml');
 

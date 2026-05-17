@@ -690,11 +690,30 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         enabled?: bool|Param, // Default: false
  *     },
  * }
+ * @psalm-type MosycaConfig = array{
+ *     identity?: array{
+ *         tenants?: array<string, array{ // Default: []
+ *             name?: scalar|Param|null,
+ *             metadata?: list<scalar|Param|null>,
+ *         }>,
+ *         users?: array<string, array{ // Default: []
+ *             email?: scalar|Param|null,
+ *             display_name?: scalar|Param|null, // Default: null
+ *             groups?: list<scalar|Param|null>,
+ *             allowed_tenants?: list<scalar|Param|null>,
+ *         }>,
+ *         groups?: array<string, array{ // Default: []
+ *             roles?: list<scalar|Param|null>,
+ *             permissions?: list<scalar|Param|null>,
+ *         }>,
+ *     },
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
  *     services?: ServicesConfig,
  *     framework?: FrameworkConfig,
+ *     mosyca?: MosycaConfig,
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,

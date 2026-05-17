@@ -128,3 +128,45 @@ services:
     Mosyca\Core\Ledger\Controller\LedgerController:
         arguments:
             $logDir: '%mosyca.log_dir%'
+
+    # ── V0.14: Core Identity Bootstrap (ADR 1.5) ────────────────────────────
+    # YAML-backed providers receive compiled container parameters.
+    # Any plugin (e.g. plugin-mosyca-admin-db) can replace the concrete
+    # implementation by redefining the interface alias in its own services.yaml.
+
+    Mosyca\Core\Identity\Provider\YamlTenantProvider:
+        arguments:
+            $tenants: '%mosyca.identity.tenants%'
+
+    Mosyca\Core\Identity\Provider\TenantProviderInterface:
+        alias: Mosyca\Core\Identity\Provider\YamlTenantProvider
+        public: true
+
+    Mosyca\Core\Identity\Provider\YamlUserProvider:
+        arguments:
+            $users: '%mosyca.identity.users%'
+
+    Mosyca\Core\Identity\Provider\UserProviderInterface:
+        alias: Mosyca\Core\Identity\Provider\YamlUserProvider
+        public: true
+
+    Mosyca\Core\Identity\Provider\YamlGroupProvider:
+        arguments:
+            $groups: '%mosyca.identity.groups%'
+
+    Mosyca\Core\Identity\Provider\GroupProviderInterface:
+        alias: Mosyca\Core\Identity\Provider\YamlGroupProvider
+        public: true
+
+    # ── Identity Actions (mosyca:tenant:*, mosyca:user:*, mosyca:group:*) ───
+    Mosyca\Core\Action\Identity\TenantReadAction: ~
+    Mosyca\Core\Action\Identity\TenantListAction: ~
+    Mosyca\Core\Action\Identity\UserReadAction: ~
+    Mosyca\Core\Action\Identity\UserListAction: ~
+    Mosyca\Core\Action\Identity\GroupReadAction: ~
+    Mosyca\Core\Action\Identity\GroupListAction: ~
+
+    # ── Identity Resources ───────────────────────────────────────────────────
+    Mosyca\Core\Identity\Resource\TenantResource: ~
+    Mosyca\Core\Identity\Resource\UserResource: ~
+    Mosyca\Core\Identity\Resource\GroupResource: ~

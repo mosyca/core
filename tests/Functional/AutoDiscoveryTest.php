@@ -22,9 +22,16 @@ final class AutoDiscoveryTest extends KernelTestCase
         /** @var ActionRegistry $registry */
         $registry = self::getContainer()->get(ActionRegistry::class);
 
-        self::assertCount(2, $registry->all());
+        // 2 system + 6 identity read actions (ADR 1.5.2, no mutations)
+        self::assertCount(8, $registry->all());
         self::assertTrue($registry->has('mosyca:system:ping'));
         self::assertTrue($registry->has('mosyca:system:echo'));
+        self::assertTrue($registry->has('mosyca:tenant:list'));
+        self::assertTrue($registry->has('mosyca:tenant:read'));
+        self::assertTrue($registry->has('mosyca:user:list'));
+        self::assertTrue($registry->has('mosyca:user:read'));
+        self::assertTrue($registry->has('mosyca:group:list'));
+        self::assertTrue($registry->has('mosyca:group:read'));
     }
 
     protected function tearDown(): void
